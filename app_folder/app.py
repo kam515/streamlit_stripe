@@ -11,8 +11,7 @@ from st_paywall import add_auth
 # st.markdown('hi')
 
 st.set_page_config(layout="wide")
-st.title("🎈 Katie's Subscription app POC 🎈")
-st.balloons()
+st.title("Katie's Subscription app POC")
 
 add_auth(
     required=True,
@@ -21,5 +20,6 @@ add_auth(
     login_sidebar=True,
 )
 
+st.balloons()
 st.write("Congrats, you are subscribed!")
 st.write("the email of the user is " + str(st.session_state.email))
