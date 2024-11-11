@@ -19,7 +19,8 @@ add_auth(
     login_button_color="#FD504D",
     login_sidebar=True,
 )
-
+st.write(st.session_state.email)
+st.write(st.session_state.user_subscribed)
 st.balloons()
 st.write("Congrats, you are subscribed!")
 st.write("the email of the user is " + str(st.session_state.email))
