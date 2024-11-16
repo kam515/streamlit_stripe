@@ -28,6 +28,8 @@ from st_paywall import add_auth
 import streamlit as st
 from st_paywall import add_auth
 
+st.markdown('hi')
+
 # Cache the function that retrieves user subscription data.
 @st.cache_data
 def retrieve_user_data():
