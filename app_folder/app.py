@@ -2,6 +2,7 @@ import streamlit as st
 from st_paywall import add_auth
 
 st.markdown('hi')
+st.markdown('hi again')
 
 # Cache the function that retrieves user subscription data.
 @st.cache_data
