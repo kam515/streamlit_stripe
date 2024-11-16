@@ -1,31 +1,4 @@
 import streamlit as st
-
-from st_paywall import add_auth
-
-# # add_auth(required=True)
-
-# # #after authentication, the email and subscription status is stored in session state
-# # st.write(st.session_state.email)
-# # st.write(st.session_state.user_subscribed)
-
-# # st.markdown('hi')
-
-# st.set_page_config(layout="wide")
-# st.title("Katie's Subscription app POC")
-
-# add_auth(
-#     required=True,
-#     login_button_text="Login with Google",
-#     login_button_color="#FD504D",
-#     login_sidebar=True,
-# )
-# st.write(st.session_state.email)
-# st.write(st.session_state.user_subscribed)
-# st.balloons()
-# st.write("Congrats, you are subscribed!")
-# st.write("the email of the user is " + str(st.session_state.email))
-
-import streamlit as st
 from st_paywall import add_auth
 
 st.markdown('hi')
@@ -40,7 +13,15 @@ def retrieve_user_data():
     return email, subscribed
 
 # Authenticate the user
-add_auth(required=True)
+add_auth(
+    required=True,
+    login_button_text="Login with Google",
+    login_button_color="#FD504D",
+    login_sidebar=True,
+)
+
+st.write("Congrats, you are subscribed!")
+st.write("the email of the user is " + str(st.session_state.email))
 
 # After successful authentication, set the email and subscription status in session state
 if "email" not in st.session_state or "user_subscribed" not in st.session_state:
@@ -54,5 +35,3 @@ user_email, user_subscribed = retrieve_user_data()
 # Display the cached session state information
 st.write(user_email)
 st.write(user_subscribed)
-
-st.write('hi')
