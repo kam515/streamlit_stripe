@@ -41,7 +41,8 @@ def markdown_to_pdf(input_file_content, output_file_path):
         temp_input_file_path = temp_input_file.name
     
     # Convert the temporary file to PDF
-    pypandoc.convert_file(temp_input_file_path, "pdf", outputfile=output_file_path)
+    pypandoc.convert_file(temp_input_file_path, "pdf", outputfile=output_file_path, extra_args=["--pdf-engine=xelatex"])
+
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
