@@ -26,9 +26,6 @@ for uploaded_file in uploaded_files:
     st.write(bytes_data)
 
 
-
-
-
 # st.markdown('## Download your pdf here:')
 
 # if uploaded_files:
