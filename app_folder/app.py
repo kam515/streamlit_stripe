@@ -30,17 +30,18 @@ def markdown_to_pdf(input_file_path, output_file_path):
 
 if uploaded_files:
     output_file_path = uploaded_file.name + "_as_pdf.pdf"
-    markdown_to_pdf(uploaded_file, output_file_path)
+    markdown_to_pdf(uploaded_file.name, output_file_path)
 
 
 st.markdown('## Download your pdf here:')
 
-st.download_button(
-    label="Download data as PDF",
-    data=output_file_path,
-    file_name=output_file_path,
-    mime="pdf",
-)
+if uploaded_files:
+    st.download_button(
+        label="Download data as PDF",
+        data=output_file_path,
+        file_name=output_file_path,
+        mime="pdf",
+    )
 
 
 
