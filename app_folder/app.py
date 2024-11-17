@@ -1,13 +1,9 @@
 import streamlit as st
-from st_paywall import aggregate_auth
+import st_paywall
 
 st.markdown('u need to subscribe here')
 
-aggregate_auth.require_auth(
-    login_button_text = "Login with Google",
-    login_button_color = "#FD504D",
-    login_sidebar = True,
-)
+st_paywall.add_auth(required=True)
 
 #after authentication, the email and subscription status is stored in session state
 st.write(st.session_state.email)
