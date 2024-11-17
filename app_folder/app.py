@@ -1,5 +1,6 @@
 import streamlit as st
 import st_paywall
+import pypandoc_binary
 
 st.markdown('u need to subscribe here')
 
@@ -11,6 +12,11 @@ st.write(st.session_state.user_subscribed)
 
 st.markdown('hi')
 st.markdown('hi again')
+
+st.markdown('Upload your markdown document here:')
+
+
+st.markdown('Download your pdf here')
 
 # # Cache the function that retrieves user subscription data.
 # @st.cache_data
