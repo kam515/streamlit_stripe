@@ -38,14 +38,16 @@ for uploaded_file in uploaded_files:
 
 
 
-# # Cache the function that retrieves user subscription data.
-# @st.cache_data
-# def retrieve_user_data():
-#     # Simulate fetching authenticated user email and subscription status
-#     # Replace with actual retrieval logic if needed.
-#     email = st.session_state.get("email", None)
-#     subscribed = st.session_state.get("user_subscribed", None)
-#     return email, subscribed
+# Cache the function that retrieves user subscription data.
+@st.cache_data
+def retrieve_user_data():
+    # Simulate fetching authenticated user email and subscription status
+    # Replace with actual retrieval logic if needed.
+    email = st.session_state.get("email", None)
+    subscribed = st.session_state.get("user_subscribed", None)
+    return email, subscribed
+
+user_email, user_subscribed = retrieve_user_data()
 
 # # Authenticate the user
 # add_auth(
