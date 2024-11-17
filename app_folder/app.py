@@ -49,6 +49,9 @@ def retrieve_user_data():
 
 user_email, user_subscribed = retrieve_user_data()
 
+st.write('Cached email:')
+st.write(user_email)
+
 # # Authenticate the user
 # add_auth(
 #     required=True,
