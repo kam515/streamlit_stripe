@@ -39,7 +39,7 @@ for uploaded_file in uploaded_files:
 
 
 # Cache the function that retrieves user subscription data.
-@st.cache_data
+@st.cache_resource
 def retrieve_user_data():
     # Simulate fetching authenticated user email and subscription status
     # Replace with actual retrieval logic if needed.
