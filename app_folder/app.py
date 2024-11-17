@@ -15,6 +15,25 @@ st.markdown('hi again')
 
 st.markdown('## Upload your markdown document here:')
 
+# UPLOAD FILE(S)
+uploaded_files = st.file_uploader(
+    "Choose a Markdown file", accept_multiple_files=True
+)
+for uploaded_file in uploaded_files:
+    bytes_data = uploaded_file.read()
+    st.write("filename:", uploaded_file.name)
+    st.write(bytes_data)
+
+# # CONVERT TO PDF
+# def markdown_to_pdf(input_file_path, output_file_path):
+#     return pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
+
+# st.download_button(
+#     label="Download data as CSV",
+#     data=csv,
+#     file_name="large_df.csv",
+#     mime="text/csv",
+# )
 
 st.markdown('## Download your pdf here:')
 
