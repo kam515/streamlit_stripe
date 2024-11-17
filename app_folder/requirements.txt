@@ -3,3 +3,4 @@ pandas
 streamlit
 st_paywall
 pypandoc_binary
+tempfile

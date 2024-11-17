@@ -1,6 +1,7 @@
 import streamlit as st
 import st_paywall
 import pypandoc
+import tempfile
 
 st.markdown('u need to subscribe here')
 
