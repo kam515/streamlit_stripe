@@ -22,27 +22,54 @@ uploaded_files = st.file_uploader(
 for uploaded_file in uploaded_files:
     bytes_data = uploaded_file.read()
     st.write("filename:", uploaded_file.name)
-    # st.write(bytes_data)
 
-# # CONVERT TO PDF
-def markdown_to_pdf(input_file_path, output_file_path):
-    pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
-    return 
+# # # CONVERT TO PDF
+# def markdown_to_pdf(input_file_path, output_file_path):
+#     pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
+#     return 
+
+# if uploaded_files:
+#     output_file_path = uploaded_file.name + "_as_pdf.pdf"
+#     markdown_to_pdf(..., output_file_path)
+
+# CONVERT TO PDF
+def markdown_to_pdf(input_file_content, output_file_path):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".md") as temp_input_file:
+        # Write the uploaded file content to a temporary file
+        temp_input_file.write(input_file_content)
+        temp_input_file_path = temp_input_file.name
+    
+    # Convert the temporary file to PDF
+    pypandoc.convert_file(temp_input_file_path, "pdf", outputfile=output_file_path)
 
 if uploaded_files:
-    output_file_path = uploaded_file.name + "_as_pdf.pdf"
-    markdown_to_pdf(bytes_data, output_file_path)
+    for uploaded_file in uploaded_files:
+        # Generate output file path
+        output_file_path = uploaded_file.name + "_as_pdf.pdf"
+
+        # Call the conversion function
+        markdown_to_pdf(uploaded_file.read(), output_file_path)
+
+        # Show download link for the converted PDF
+        st.write(f"Converted PDF for {uploaded_file.name}:")
+        with open(output_file_path, "rb") as pdf_file:
+            st.download_button(
+                label="Download PDF",
+                data=pdf_file,
+                file_name=output_file_path,
+                mime="application/pdf",
+            )
 
 
-st.markdown('## Download your pdf here:')
+# st.markdown('## Download your pdf here:')
 
-if uploaded_files:
-    st.download_button(
-        label="Download data as PDF",
-        data=output_file_path,
-        file_name=output_file_path,
-        mime="pdf",
-    )
+# if uploaded_files:
+#     st.download_button(
+#         label="Download data as PDF",
+#         data=output_file_path,
+#         file_name=output_file_path,
+#         mime="pdf",
+#     )
 
 
 
