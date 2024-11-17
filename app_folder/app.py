@@ -28,9 +28,9 @@ for uploaded_file in uploaded_files:
 def markdown_to_pdf(input_file_path, output_file_path):
     return pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
 
-
-output_file_path = uploaded_file.name + "_as_pdf.pdf"
-markdown_to_pdf(uploaded_file, output_file_path)
+if uploaded_files:
+    output_file_path = uploaded_file.name + "_as_pdf.pdf"
+    markdown_to_pdf(uploaded_file, output_file_path)
 
 
 st.markdown('## Download your pdf here:')
