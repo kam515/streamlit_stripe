@@ -13,10 +13,12 @@ st.write(st.session_state.user_subscribed)
 st.markdown('hi')
 st.markdown('hi again')
 
-st.markdown('Upload your markdown document here:')
+st.markdown('## Upload your markdown document here:')
 
 
-st.markdown('Download your pdf here')
+st.markdown('## Download your pdf here:')
+
+
 
 # # Cache the function that retrieves user subscription data.
 # @st.cache_data
