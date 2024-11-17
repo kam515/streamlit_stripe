@@ -33,6 +33,7 @@ def require_auth(
     login_sidebar: bool = True,
 ):
     user_email = get_logged_in_user_email()
+    st.write(user_email)
 
     if not user_email:
         show_login_button(
