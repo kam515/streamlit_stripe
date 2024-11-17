@@ -22,7 +22,7 @@ uploaded_files = st.file_uploader(
 for uploaded_file in uploaded_files:
     bytes_data = uploaded_file.read()
     st.write("filename:", uploaded_file.name)
-    st.write(bytes_data)
+    # st.write(bytes_data)
 
 # # CONVERT TO PDF
 def markdown_to_pdf(input_file_path, output_file_path):
@@ -30,7 +30,7 @@ def markdown_to_pdf(input_file_path, output_file_path):
 
 if uploaded_files:
     output_file_path = uploaded_file.name + "_as_pdf.pdf"
-    markdown_to_pdf(uploaded_file.name, output_file_path)
+    markdown_to_pdf(bytes_data, output_file_path)
 
 
 st.markdown('## Download your pdf here:')
