@@ -25,17 +25,22 @@ for uploaded_file in uploaded_files:
     st.write(bytes_data)
 
 # # CONVERT TO PDF
-# def markdown_to_pdf(input_file_path, output_file_path):
-#     return pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
+def markdown_to_pdf(input_file_path, output_file_path):
+    return pypandoc.convert_file(input_file_path, "pdf", outputfile=output_file_path)
 
-# st.download_button(
-#     label="Download data as CSV",
-#     data=csv,
-#     file_name="large_df.csv",
-#     mime="text/csv",
-# )
+if uploaded_file:
+    output_file_path = uploaded_file.name + "_as_pdf.pdf"
+    markdown_to_pdf(uploaded_file, output_file_path)
+
 
 st.markdown('## Download your pdf here:')
+
+st.download_button(
+    label="Download data as PDF",
+    data=output_file_path,
+    file_name=output_file_path,
+    mime="pdf",
+)
 
 
 
