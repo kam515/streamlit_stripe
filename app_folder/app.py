@@ -1,7 +1,9 @@
 import streamlit as st
-from st_paywall import add_auth
+from st_paywall import aggregate_auth
 
-add_auth(required=True)
+st.markdown('u need to subscribe here')
+
+aggregate_auth.add_auth(required=True)
 
 #after authentication, the email and subscription status is stored in session state
 st.write(st.session_state.email)
