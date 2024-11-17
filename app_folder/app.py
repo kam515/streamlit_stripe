@@ -3,7 +3,11 @@ from st_paywall import aggregate_auth
 
 st.markdown('u need to subscribe here')
 
-aggregate_auth.add_auth(required=True)
+aggregate_auth.require_auth(
+    login_button_text = "Login with Google",
+    login_button_color = "#FD504D",
+    login_sidebar = True,
+)
 
 #after authentication, the email and subscription status is stored in session state
 st.write(st.session_state.email)
