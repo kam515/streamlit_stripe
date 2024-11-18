@@ -1,7 +1,7 @@
 import streamlit as st
 import st_paywall
 import pypandoc
-import tempfile
+from supabase import create_client
 
 st.markdown('u need to subscribe here')
 
