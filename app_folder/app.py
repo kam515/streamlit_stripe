@@ -11,11 +11,11 @@ st_paywall.add_auth(required=True)
 # st.write(st.session_state.email)
 # st.write(st.session_state.user_subscribed)
 
-sb_url = st.secrets.get("sb_url")
-sb_key = st.secrets.get("sb_key")
-Client = create_client(sb_url, sb_key)
+# sb_url = st.secrets.get("sb_url")
+# sb_key = st.secrets.get("sb_key")
+# Client = create_client(sb_url, sb_key)
 
-supabase.table("user_details").select("*").eq("user_email", session_state.email)
+# supabase.table("user_details").select("*").eq("user_email", session_state.email)
 
 openai_key = st.secrets.get("openai_api_key")
 
