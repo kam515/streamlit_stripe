@@ -1,0 +1,76 @@
+/* General Body Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header Styling */
+h1, h2, h3 {
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background: #343a40;
+    color: #f8f9fa;
+    border-right: 2px solid #495057;
+}
+[data-testid="stSidebar"] h2 {
+    color: #f8f9fa;
+}
+
+/* Form Inputs */
+input, select, textarea, .st-multi-select {
+    border: 2px solid #adb5bd;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #495057;
+    background-color: #f8f9fa;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 8px rgba(13, 110, 253, 0.4);
+    outline: none;
+}
+
+/* Buttons */
+button {
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+button:hover {
+    background-color: #0b5ed7;
+}
+
+/* Table Styling */
+.ag-theme-streamlit {
+    border: 1px solid #dee2e6;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.ag-header-cell-label {
+    color: #333;
+    font-weight: 600;
+}
+.ag-cell {
+    color: #495057;
+    font-size: 14px;
+}
