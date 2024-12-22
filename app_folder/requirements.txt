@@ -4,3 +4,4 @@ streamlit
 st_paywall
 pypandoc_binary
 supabase
+openai
