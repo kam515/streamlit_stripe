@@ -8,409 +8,6 @@ from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
 from openai import OpenAI
-MODEL = "gpt-4o-2024-08-06"
-api_key = ... #st.secrets
-client = OpenAI(api_key=api_key)
-
-# Set page configuration.
-st.set_page_config(page_title="Sample App", layout="wide")
-
-
-# from openai import OpenAI
-# from pydantic import BaseModel, Field
-# from enum import Enum
-# from typing import List, Optional
-
-# # Enums for allowed values
-# class VisibilityEnum(str, Enum):
-#     VISIBLE_CONTENT = "Visible Content"
-#     INVISIBLE_DESCRIPTION = "Invisible Description"
-
-# class ElementEnum(str, Enum):
-#     REGULAR_TEXT = "Regular text"
-#     IMAGE = "Image"
-#     NUMBERED_LIST = "Numbered list"
-#     BULLETED_LIST = "Bulleted List"
-#     HEADING_1 = "Heading 1"
-#     HEADING_2 = "Heading 2"
-#     HEADING_3 = "Heading 3"
-#     NONE = "None"
-
-# class OutlineItem(BaseModel):
-#     title: str = Field(..., description="1-3 word title for this section.")
-#     description: str = Field(..., description="Reason for this section.")
-#     criteria_for_success: str = Field(..., description="Success criteria.")
-#     justification: str = Field(..., description="Why it meets success criteria.")
-#     # Use an Enum to limit possible values:
-#     visible_content_or_invisible_description: VisibilityEnum = Field(
-#         ...,
-#         description="Must be 'Visible Content' or 'Invisible Description'."
-#     )
-#     element: Optional[ElementEnum] = None
-#     visible_content: Optional[str] = None
-
-# class OutlineLayer(BaseModel):
-#     # Simply define this as a List without min/max constraints
-#     outline_items: List[OutlineItem] = Field(...)
-
-# class Project(BaseModel):
-#     project_title: str
-#     outline_layers: List[OutlineLayer]
-
-# from pydantic import BaseModel
-# import json
-
-# def to_nested_dict(obj):
-#     """
-#     Convert Pydantic models, lists, and dicts 
-#     into fully nested Python dictionaries.
-#     """
-#     if isinstance(obj, BaseModel):
-#         # Convert Pydantic v2 model to dict
-#         data = obj.model_dump()
-#         return {k: to_nested_dict(v) for k, v in data.items()}
-#     elif isinstance(obj, list):
-#         return [to_nested_dict(item) for item in obj]
-#     elif isinstance(obj, dict):
-#         return {k: to_nested_dict(v) for k, v in obj.items()}
-#     else:
-#         # Primitive or other types
-#         return obj
-
-# def to_json(obj):
-#     """
-#     Return JSON string from nested dict form.
-#     """
-#     return json.dumps(to_nested_dict(obj), indent=2)
-# st.session_state["project_dict"] = None
-
-# st.session_state["form_submitted"] = False
-# with st.form("my_form"):
-#     prompty = st.text_input("What is the goal of your project?")
-#     with st.columns([11, 2])[1]:
-#         prompty_submit = st.form_submit_button('Start my outline!')
-#         st.session_state["form_submitted"] = True
-
-
-# system_message = (
-#     "You are an assistant that returns JSON output strictly matching the Project schema. "
-# )
-
-# st.session_state["generated_once"] = False
-
-# if st.session_state["form_submitted"] == True and st.session_state["generated_once"] == False:
-#     completion = client.beta.chat.completions.parse(
-#         model="gpt-4o-2024-08-06",
-#         messages=[
-#             {"role": "system", "content": system_message},
-#             {"role": "user", "content": prompty},
-#         ],
-#         response_format=Project,
-#     )
-#     # Parsed object
-#     project_response = completion.choices[0].message.parsed
-#     st.session_state["generated_once"] = True
-
-#     nested_dict = to_nested_dict(project_response)
-#     if st.session_state["project_dict"] == None:
-#         st.session_state["project_dict"] = nested_dict
-
-#     # Convenience shortcut:
-#     outline_layer = st.session_state["project_dict"]["outline_layers"][0]
-#     outline_items = outline_layer["outline_items"]
-
-#     # Pull or default the layer name.
-#     layer_name = outline_layer.get("layer_name", "Layer Name")
-
-#     # Eventully name the page the layer_name dynamically
-
-#     # Function to inject custom CSS
-#     def inject_css():
-#         st.markdown(
-#             """
-#             <style>
-#             /* General Body Styling */
-#             body {
-#                 font-family: 'Arial', sans-serif;
-#                 background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
-#                 color: #333;
-#                 margin: 0;
-#                 padding: 0;
-#             }
-
-#             /* Full-Width Content */
-#             .main {
-#                 width: 100% !important; /* Force full width */
-#                 padding: 0 !important; /* Remove additional paddings */
-#             }
-
-#             /* Headers */
-#             h1, h2, h3 {
-#                 font-weight: 700;
-#                 color: #222;
-#                 text-transform: uppercase;
-#                 letter-spacing: 1px;
-#                 margin-bottom: 10px;
-#                 text-align: center;
-#             }
-
-#             /* Sidebar */
-#             [data-testid="stSidebar"] {
-#                 background: #343a40;
-#                 color: #f8f9fa;
-#                 border-right: 2px solid #495057;
-#             }
-
-#             /* Buttons */
-#             button {
-#                 display: block; /* Ensure it's treated as a block element */
-#                 margin: 20px auto; /* Center horizontally */
-#                 background-color: #0d6efd;
-#                 color: #fff;
-#                 border: none;
-#                 border-radius: 6px;
-#                 padding: 10px 20px;
-#                 font-size: 14px;
-#                 cursor: pointer;
-#                 transition: background-color 0.3s ease;
-#             }
-
-#             /* Table Styling */
-#             .ag-theme-streamlit {
-#                 border: 1px solid #dee2e6;
-#                 background-color: #ffffff;
-#                 border-radius: 10px;
-#                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-#                 width: 100%; /* Ensures table spans the full container width */
-#                 height: 600px; /* Increases the height of the table */
-#             }
-#             .ag-header-cell-label {
-#                 color: #333;
-#                 font-weight: 600;
-#             }
-#             .ag-cell {
-#                 color: #495057;
-#                 font-size: 16px; /* Slightly larger font for better readability */
-#             }
-
-#             /* Ensuring Main Container Fills Full Width */
-#             [data-testid="stAppViewContainer"] {
-#                 max-width: 100% !important; /* Full width of the page */
-#                 padding: 0 !important;
-#             }
-#             </style>
-#             """,
-#             unsafe_allow_html=True
-#         )
-#     inject_css()
-
-#     def create_container_with_color(id, color="#E4F2EC"):
-#         # todo: instead of color you can send in any css
-#         plh = st.container()
-#         html_code = """<div id = 'my_div_outer'></div>"""
-#         st.markdown(html_code, unsafe_allow_html=True)
-#         with plh:
-#             inner_html_code = """<div id = 'my_div_inner_%s'></div>""" % id
-#             plh.markdown(inner_html_code, unsafe_allow_html=True)
-#         ## applying style
-#         chat_plh_style = """
-#             <style>
-#                 div[data-testid='stVerticalBlock']:has(div#my_div_inner_%s):not(:has(div#my_div_outer)) {
-#                     background-color: %s;
-#                     border-radius: 20px;
-#                     padding: 10px;
-#                 };
-#             </style>
-#             """
-#         chat_plh_style = chat_plh_style % (id, color)
-#         st.markdown(chat_plh_style, unsafe_allow_html=True)
-#         return plh
-
-#     import pandas as pd
-#     import copy
-
-#     # Sample data
-#     data = outline_items
-#     df = pd.DataFrame(data)
-
-#     # Initialize session state for order, data, and history
-#     if "data" not in st.session_state:
-#         st.session_state["data"] = df.copy()
-#         st.session_state["order"] = list(range(len(df)))
-#         st.session_state["history"] = []  # Stack for undo/redo
-#         st.session_state["redo_stack"] = []
-#         st.session_state["editing_row"] = None  # Track the row being edited
-
-#     # Save the current state for undo/redo
-#     def save_state():
-#         state = {
-#             "data": st.session_state["data"].copy(),
-#             "order": copy.deepcopy(st.session_state["order"]),
-#         }
-#         st.session_state["history"].append(state)
-#         st.session_state["redo_stack"].clear()
-
-#     # Move rows up or down
-#     def move_row(index, direction):
-#         save_state()
-#         order = st.session_state["order"]
-#         if direction == "up" and index > 0:
-#             order[index], order[index - 1] = order[index - 1], order[index]
-#         elif direction == "down" and index < len(order) - 1:
-#             order[index], order[index + 1] = order[index + 1], order[index]
-#         st.session_state["order"] = order
-
-#     # Delete a row
-#     def delete_row(index):
-#         save_state()
-#         order = st.session_state["order"]
-#         data = st.session_state["data"]
-#         row_to_remove = order.pop(index)
-#         st.session_state["data"] = data.drop(row_to_remove).reset_index(drop=True)
-#         st.session_state["order"] = list(range(len(st.session_state["data"])))
-
-#     # Edit a row
-#     def edit_row(index):
-#         st.session_state["editing_row"] = index
-
-#     def save_edit(index, new_desc):
-#         save_state()
-#         ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
-#         ordered_data.loc[index, "description"] = new_desc
-#         st.session_state["data"] = ordered_data
-#         st.session_state["editing_row"] = None
-
-#     # Undo/Redo functionality
-#     def undo():
-#         if st.session_state["history"]:
-#             state = st.session_state["history"].pop()
-#             st.session_state["redo_stack"].append(
-#                 {"data": st.session_state["data"], "order": st.session_state["order"]}
-#             )
-#             st.session_state["data"] = state["data"]
-#             st.session_state["order"] = state["order"]
-
-#     def redo():
-#         if st.session_state["redo_stack"]:
-#             state = st.session_state["redo_stack"].pop()
-#             st.session_state["history"].append(
-#                 {"data": st.session_state["data"], "order": st.session_state["order"]}
-#             )
-#             st.session_state["data"] = state["data"]
-#             st.session_state["order"] = state["order"]
-
-#     # Insert a new row after the specified position
-#     def add_row(position, new_desc=""):
-#         """
-#         Insert a new row at 'position + 1' in the displayed order,
-#         preserving undo/redo history.
-#         """
-#         save_state()
-#         # Determine an unused row index in 'data'
-#         if st.session_state["data"].empty:
-#             new_id = 0
-#         else:
-#             new_id = st.session_state["data"].index.max() + 1
-
-#         # Create and append the new row in 'data'
-#         new_row = pd.DataFrame({"description": [new_desc]}, index=[new_id])
-#         st.session_state["data"] = pd.concat([st.session_state["data"], new_row])
-
-#         # Insert new_id into 'order' so it appears right after 'position'
-#         st.session_state["order"].insert(position + 1, new_id)
-
-#     # Reorder the dataframe based on the order column
-#     ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
-
-#     top_row = st.columns([0.5, 0.5, 7, 2])  # Adjust column widths as needed
-#     with top_row[0]:
-#         if st.button("⟲", help="Undo", disabled=not st.session_state["history"]):
-#             undo()
-
-#     with top_row[1]:
-#         if st.button("↻", help="Redo", disabled=not st.session_state["history"]):
-#             redo()
-
-#     # with top_row[3]:
-#     if st.button("<  Bigger Picture"):
-#         st.info("hi")
-
-#     st.markdown(
-#         f"""
-#         <h2 style="text-align:center; margin-top:0px;">{layer_name}</h2>
-#         """,
-#         unsafe_allow_html=True
-#     )
-
-#     st.write("---")
-
-#     # If no items, show a simple message.
-#     if not data:
-#         st.write("No items yet.")
-#     else:
-#         # Display each outline item.
-#         for index, item in ordered_data.iterrows():
-#             # Container for each outline item block.
-#             test_color = st.container(border=True, key=f"bluey_{index}")
-#             testsse_color = create_container_with_color(f"bluey_{index}", color="#E4F2EC")
-#             with testsse_color:
-#                 item_cols = st.columns([0.5, 0.5, 5, 0.5, 0.5, 0.5])
-#                 # Up arrow (move item up) if not at top
-#                 with item_cols[0]:
-#                     if index > 0:
-#                         if st.button("↑", key=f"up_{index}"):
-#                             move_row(index, "up")
-#                     else:
-#                         st.markdown("")
-                
-#                 # Down arrow (move item down) if not at bottom
-#                 with item_cols[1]:
-#                     if index < len(data) - 1:
-#                         if st.button("↓", key=f"down_{index}"):
-#                             # Swap items in the list
-#                             move_row(index, "down")
-#                     else:
-#                         st.markdown("")
-
-#                 # Main text + visible content
-#                 with item_cols[2]:
-#                     if st.session_state["editing_row"] == index:
-#                         new_desc = st.text_input("Outline Section", value=item["description"], key=f"description_edit_{index}")
-#                         if st.button("Save", key=f"save_edit_{index}"):
-#                             save_edit(index, new_desc)
-#                     else:
-#                         st.write(f"**{item.get('description', '(No description)')}**")
-                
-#                 # Edit button (inline text input example)
-#                 with item_cols[4]:
-#                     # # Rename button (similar functionality, but separate if needed)
-#                     if st.button("✐", key=f"rename_{index}"):
-#                         edit_row(index)
-                
-#                 # Delete button
-#                 with item_cols[5]:
-#                     if st.button("🗑", key=f"delete_{index}"):
-#                         delete_row(index)
-                
-#                 # "Publish"/"Next" arrow (optional new row or column)
-#                 next_col = st.columns([10, 1])[1]
-#                 with next_col:
-#                     if st.button("See more detail →", key=f"next_{index}", help="Publish/Next"):
-#                         st.success("hi")
-
-#             add_item_center = st.columns([4, 1, 4])[1]
-#             with add_item_center:
-#                 if st.button("➕ Add Item", key=f"plus_{index}"):
-#                     add_row(index)
-
-#     # Always keep session state updated
-#     st.session_state["project_dict"]["outline_layers"][0]["outline_items"] = data
-
-
-import streamlit as st
-import copy  # Added to support save_state() function
-import pandas as pd  # Needed for DataFrame operations
-
 from typing import List
 import os
 import json
@@ -423,6 +20,16 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List, Optional
+
+MODEL = "gpt-4o-2024-08-06"
+api_key = st.secrets["openai_api_info"]["openai_key"]
+client = OpenAI(api_key=api_key)
+
+# Set page configuration.
+st.set_page_config(page_title="Sample App", layout="wide")
+import streamlit as st
+import copy  # Added to support save_state() function
+import pandas as pd  # Needed for DataFrame operations
 
 MODEL = "gpt-4o-2024-08-06"
 # api_key = "secret_api_key"
@@ -507,12 +114,7 @@ with st.form("my_form"):
         if prompty_submit:
             st.session_state["form_submitted"] = True
 
-#--- LOGIC ERROR #1: The code checked "form_submitted" outside the form 
-#    but set it to True inside. This triggers re-runs on each draw. 
-#    SOLUTION: We now keep track carefully and ensure we only generate 
-#    once per run of the form.
-
-system_message = "You are an assistant that returns JSON strictly matching the Project schema."
+system_message = "You are an expert strategic planner who creates first big picture, and then increasingly detailed outlines that comprehensively accomplish the stated goal."
 
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
     # Attempt the OpenAI call once
@@ -520,7 +122,7 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
         model=MODEL,
         messages=[
             {"role": "system", "content": system_message},
-            {"role": "user", "content": prompty},
+            {"role": "user", "content": f"Make a big picture outline of the following goal with 2-5 items that ensure the goal is accomplished from start to finish: {prompty}"},
         ],
         response_format=Project,
     )
@@ -533,17 +135,10 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
 
 #--- Once we have a project_dict, build the data for the first layer ---
 if st.session_state["project_dict"] is not None:
-    # A convenience shortcut
     outline_layer = st.session_state["project_dict"]["outline_layers"][0]
     outline_items = outline_layer["outline_items"]
     layer_name = outline_layer["layer_name"]  # from the updated OutlineLayer model
-    # layer_name = "sample appppp"
-    # Create a DataFrame of outline items
     data = pd.DataFrame(outline_items)
-
-    #--- LOGIC ERROR #2: The original code reloaded 'data' into st.session_state on each run, 
-    #    causing slow performance and confusion. 
-    #    SOLUTION: Only initialize once if not already done.
 
     if "data" not in st.session_state:
         st.session_state["data"] = data.copy()
@@ -556,7 +151,6 @@ if st.session_state["project_dict"] is not None:
     if "editing_row" not in st.session_state:
         st.session_state["editing_row"] = None
 
-    #--- HISTORY MANAGEMENT ---
     def save_state():
         state = {
             "data": st.session_state["data"].copy(),
@@ -565,7 +159,6 @@ if st.session_state["project_dict"] is not None:
         st.session_state["history"].append(state)
         st.session_state["redo_stack"].clear()
 
-    #--- MOVE ROW ---
     def move_row(index, direction):
         save_state()
         order = st.session_state["order"]
@@ -575,7 +168,6 @@ if st.session_state["project_dict"] is not None:
             order[index], order[index + 1] = order[index + 1], order[index]
         st.session_state["order"] = order
 
-    #--- DELETE ROW ---
     def delete_row(index):
         save_state()
         order = st.session_state["order"]
@@ -586,7 +178,6 @@ if st.session_state["project_dict"] is not None:
         st.session_state["order"] = list(range(len(data_local)))
         st.session_state["data"] = data_local
 
-    #--- EDIT ROW ---
     def edit_row(index):
         st.session_state["editing_row"] = index
 
@@ -601,7 +192,6 @@ if st.session_state["project_dict"] is not None:
         st.session_state["data"].loc[global_index, "description"] = new_desc
         st.session_state["editing_row"] = None
 
-    #--- UNDO / REDO ---
     def undo():
         if st.session_state["history"]:
             prev_state = st.session_state["history"].pop()
@@ -628,7 +218,6 @@ if st.session_state["project_dict"] is not None:
             st.session_state["data"] = next_state["data"]
             st.session_state["order"] = next_state["order"]
 
-    #--- ADD ROW ---
     def add_row(position, new_desc=""):
         save_state()
         data_local = st.session_state["data"]
@@ -643,10 +232,8 @@ if st.session_state["project_dict"] is not None:
         order_local.insert(position + 1, new_id)
         st.session_state["order"] = order_local
 
-    # Reorder the dataframe in the displayed sequence
     ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
 
-    #--- CONTROLS ---
     top_row = st.columns([0.5, 0.5, 7, 2])
     with top_row[0]:
         if st.button("⟲", help="Undo", disabled=len(st.session_state["history"]) == 0):
@@ -656,7 +243,6 @@ if st.session_state["project_dict"] is not None:
             redo()
 
     #--- BIGGER PICTURE BUTTON ---
-    # LOGIC ERROR #3: Not moving to higher-level outline. 
     # PSEUDOCODE for shifting layers:
     # """
     # if st.button("<  Bigger Picture"):
@@ -673,8 +259,6 @@ if st.session_state["project_dict"] is not None:
     st.markdown(f"<h2 style='text-align:center;'>{layer_name}</h2>", unsafe_allow_html=True)
     st.write("---")
 
-
-    # Function to inject custom CSS
     def inject_css():
         st.markdown(
             """
@@ -782,9 +366,6 @@ if st.session_state["project_dict"] is not None:
         st.write("No items yet.")
     else:
         for index, item in ordered_data.iterrows():
-            # Streamlit doesn't support a container with direct border color natively, 
-            # so we omit the custom call create_container_with_color(...) from original code.
-            # Instead, we show each item in a standard container:
             test_color = st.container(border=True, key=f"bluey_{index}")
             testsse_color = create_container_with_color(f"bluey_{index}", color="#E4F2EC")
             with testsse_color:
