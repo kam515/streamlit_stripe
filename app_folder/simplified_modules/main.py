@@ -22,6 +22,10 @@ init_session_states()
 inject_css()
 
 # ========== Form Section ==========
+
+st.latex(r'''x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}''')
+
+
 with st.form("my_form"):
     prompty = st.text_input("What is the goal of your project?")
     submit_col = st.columns([11, 2])[1]
@@ -45,7 +49,7 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
             },
         ],
         response_format=Project,  # Pydantic parse
-    )
+   ) 
     project_response = completion.choices[0].message.parsed
     nested_dict = to_nested_dict(project_response)
     st.session_state["project_dict"] = nested_dict
