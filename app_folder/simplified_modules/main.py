@@ -159,7 +159,8 @@ if st.session_state["project_dict"] is not None:
                 with see_detail_button:
                     if st.button("See more detail →", key=f"next_{idx}"):
                         st.success("Detail expansion (future feature).")
-
+                
+                # Adds a row
                 add_item_center = st.columns([4, 1, 4])[1]
                 with add_item_center:
                     if st.button("➕ Add Item", key=f"plus_{idx}"):
@@ -169,3 +170,4 @@ if st.session_state["project_dict"] is not None:
     st.session_state["project_dict"]["outline_layers"][0]["outline_items"] = (
         st.session_state["data"].to_dict(orient="records")
     )
+
