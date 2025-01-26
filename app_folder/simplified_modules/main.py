@@ -32,7 +32,7 @@ with st.form("my_form"):
         if st.form_submit_button("Start my outline!"):
             st.session_state["form_submitted"] = True
 
-# Biggest picture layer API call
+# *SAVE_STATE_TO_DB* Biggest picture layer API call 
 system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
     # Example of an OpenAI call that returns a Project object
@@ -47,7 +47,7 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
                 ),
             },
         ],
-        response_format=Project,  # Pydantic parse
+        response_format=Project,
    ) 
     project_response = completion.choices[0].message.parsed
     nested_dict = to_nested_dict(project_response)
@@ -57,17 +57,18 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     st.session_state["generated_once"] = True
     st.session_state["current_layer"] = 0
 
-# if st.session_state["current_layer"] > 0:
-#     ...
+
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
-if st.session_state["project_dict"] is not None and st.session_state["current_layer"] == 0: # AND WE ARE ON THE FIRST LAYER!!!
+if st.session_state["project_dict"] is not None: 
     layer = st.session_state["project_dict"]["outline_layers"]
     layer_name = layer["layer_name"]
     outline_items = layer["outline_items"]
     df_data = pd.DataFrame(outline_items)
     df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
-    
+    st.markdown('### df_data:')
+    st.dataframe(df_data)
+
 
     # Create local session states if not set
     if st.session_state["data"] is None:
@@ -166,7 +167,6 @@ if st.session_state["project_dict"] is not None and st.session_state["current_la
                 # *SAVE_STATE_TO_DB* Future sub-layer expansion
                 with row_cols[2]:
                     with st.expander("See more detail"):
-                        # if st.button("See more detail →", key=f"next_{idx}"):
                         st.success("Detail expansion (future feature).")
                 
                 bottom_of_container = st.columns([4, 1, 4])
@@ -176,7 +176,7 @@ if st.session_state["project_dict"] is not None and st.session_state["current_la
                     if st.button("➕ Add Item", key=f"plus_{idx}"):
                         add_row(idx)
 
-    # *SAVE_STATE_TO_DB* Sync final data back to session's project_dict
+    
     st.session_state["project_dict"]["outline_layers"]["outline_items"] = (
         st.session_state["data"].to_dict(orient="records")
     )
