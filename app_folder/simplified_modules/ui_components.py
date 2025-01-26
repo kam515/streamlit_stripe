@@ -46,6 +46,7 @@ def inject_css():
         .ag-theme-streamlit {
             border: 1px solid #dee2e6;
             background-color: #ffffff;
+            primaryColor: #40ffe8;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 100%;
@@ -62,6 +63,12 @@ def inject_css():
         [data-testid="stAppViewContainer"] {
             max-width: 100% !important;
             padding: 0 !important;
+        }
+        a {
+            color: #40ffe8; 
+        }
+        a:hover {
+            color: #2ea395; /* Slightly darker shade for hover effect */
         }
         </style>
         """,

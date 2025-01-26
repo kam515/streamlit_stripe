@@ -6,10 +6,14 @@ def init_session_states():
     Initialize keys if they don't exist in st.session_state.
     """
     defaults = {
-        "project_dict": None,
-        "form_submitted": False,
-        "generated_once": False,
-        "data": None,
+        # project major things
+        "project_dict": None, # output of the openai API call
+        "form_submitted": False, 
+        # current page major things
+        "generated_once": False, # changes to True and stays there after the first API call
+        "current_layer": None,
+        # quickly changing layer info on page
+        "data": None, 
         "order": None,
         "history": [],
         "redo_stack": [],
