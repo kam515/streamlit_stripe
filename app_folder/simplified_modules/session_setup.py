@@ -7,12 +7,14 @@ def init_session_states():
     """
     defaults = {
         # project major things
+        "project_id": None,
+        "project_title": None,
         "project_dict": None, # output of the openai API call
         "form_submitted": False, 
         # current page major things
         "generated_once": False, # changes to True and stays there after the first API call
-        "current_layer": None,
-        # quickly changing layer info on page
+        "current_layer": None, # quickly changing layer info on page
+        "prompt_for_current_layer": None,
         "data": None, 
         "order": None,
         "history": [],

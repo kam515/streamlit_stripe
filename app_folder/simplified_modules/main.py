@@ -1,14 +1,19 @@
 import streamlit as st
 import pandas as pd
-
+import supabase
 # Local imports
 from models import Project
 from openai_client import get_openai_client
 from session_setup import (
     init_session_states, save_state, undo, redo
 )
-from data_ops import to_nested_dict
+from data_ops import to_nested_dict, get_project_metadata, save_new_project, save_layer
 from ui_components import inject_css, create_container_with_color
+from supabase import create_client, Client
+
+sb_url = st.secrets["supabase_info"]["sb_url"]
+sb_key = st.secrets["supabase_info"]["sb_key"]
+Client = create_client(sb_url, sb_key)
 
 # ========== Configurations ==========
 st.set_page_config(page_title="Sample App", layout="wide")
@@ -20,47 +25,55 @@ client = get_openai_client(api_key=API_KEY)
 init_session_states()
 inject_css()
 
+# ========== User Info ==========
+user_id = None
+
 # ========== Form Section ==========
 
 st.latex(r'''x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}''')
 
+if not st.session_state["project_id"]:
+    # USER SPECIFIES GOAL OF PROJECT; UPDATES SESSION STATE[FORM_SUBMITTED]
+    with st.form("my_form"):
+        prompty = st.text_input("What is the goal of your project?")
+        submit_col = st.columns([11, 2])[1]
+        with submit_col:
+            if st.form_submit_button("Start my outline!"):
+                st.session_state["form_submitted"] = True
 
-with st.form("my_form"):
-    prompty = st.text_input("What is the goal of your project?")
-    submit_col = st.columns([11, 2])[1]
-    with submit_col:
-        if st.form_submit_button("Start my outline!"):
-            st.session_state["form_submitted"] = True
-
-# *SAVE_STATE_TO_DB* Biggest picture layer API call 
-system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
-if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
-    # Example of an OpenAI call that returns a Project object
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": system_message},
-            {
-                "role": "user",
-                "content": (
-                    f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
-                ),
-            },
-        ],
-        response_format=Project,
-   ) 
-    project_response = completion.choices[0].message.parsed
-    nested_dict = to_nested_dict(project_response)
-    st.write('nested_dict:')
-    st.session_state["project_dict"] = nested_dict
-    st.write(nested_dict)
-    st.session_state["generated_once"] = True
-    st.session_state["current_layer"] = 0
-
+    # *SAVE_STATE_TO_DB* Biggest picture layer API call 
+    system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
+    if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
+        # Example of an OpenAI call that returns a Project object
+        completion = client.beta.chat.completions.parse(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": system_message},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+                    ),
+                },
+            ],
+            response_format=Project,
+    ) 
+        project_response = completion.choices[0].message.parsed
+        nested_dict = to_nested_dict(project_response)
+        st.write('nested_dict:')
+        st.session_state["project_dict"] = nested_dict
+        st.write(nested_dict)
+        st.session_state["project_title"] = nested_dict["project_title"]
+        project_type = "drafted workflow"
+        st.session_state["generated_once"] = True
+        st.session_state["current_layer"] = 0
+        st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+        save_new_project(st.session_state["project_title"], project_type, user_id)
 
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
-if st.session_state["project_dict"] is not None: 
+if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
+    st.write(st.session_state["project_dict"])
     layer = st.session_state["project_dict"]["outline_layers"]
     layer_name = layer["layer_name"]
     outline_items = layer["outline_items"]
@@ -68,6 +81,14 @@ if st.session_state["project_dict"] is not None:
     df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
     st.markdown('### df_data:')
     st.dataframe(df_data)
+    project_id = get_project_metadata(st.session_state["project_title"], user_id)
+    print(project_id)
+    save_layer("outline_item", # field_type_id
+               st.session_state["prompt_for_current_layer"], # prompt for current layer
+               df_data, 
+               project_id, 
+               1
+               )
 
 
     # Create local session states if not set
@@ -75,6 +96,8 @@ if st.session_state["project_dict"] is not None:
         st.session_state["data"] = df_data.copy()
     if st.session_state["order"] is None:
         st.session_state["order"] = list(range(len(df_data)))
+
+
 
     # ========== Utility Functions for the Data Table ==========
     def move_row(index, direction):
@@ -116,6 +139,7 @@ if st.session_state["project_dict"] is not None:
         order_local.insert(position + 1, new_id)
         st.session_state["order"] = order_local
 
+    ## RENDERING CURRENT LAYER ##
     # ========== Undo/Redo Buttons ==========
     top_row = st.columns([0.5, 0.5, 7, 2])
     with top_row[0]:
@@ -166,8 +190,10 @@ if st.session_state["project_dict"] is not None:
                 
                 # *SAVE_STATE_TO_DB* Future sub-layer expansion
                 with row_cols[2]:
-                    with st.expander("See more detail"):
-                        st.success("Detail expansion (future feature).")
+                    with st.columns([4, 2, 3.2])[1]:
+                        gen_yn = st.button("Generate Sub-Items  >", key=f"sublayer_gen_button_for{idx}")
+                    if gen_yn:
+                        st.success('I will soon generate the sublayers')
                 
                 bottom_of_container = st.columns([4, 1, 4])
                 # Adds a row
