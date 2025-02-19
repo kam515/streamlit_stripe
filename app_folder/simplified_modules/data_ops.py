@@ -26,12 +26,28 @@ def to_json(obj):
     """
     return json.dumps(to_nested_dict(obj), indent=2)
 
+def get_user_projects(user_id):
+    response = (
+        Client.table("projects")
+        .select("project_title")
+        .is_("UID", user_id)  # Ensure we correctly check for NULL in the "UID" column
+        .execute()
+    )
+    # Access the "data" attribute to get the actual result list
+    data = response.data
+    project_titles = [i['project_title'] for i in data]
+
+    if data:  # Ensure there's at least one result
+        return project_titles
+    else:
+        return []  # Return None if no matching project is found 
+
 def get_project_metadata(project_title, user_id):
     response = (
         Client.table("projects")
         .select("project_id")
         .eq("project_title", project_title)
-        .is_("UID", None)  # Ensure we correctly check for NULL in the "UID" column
+        .is_("UID", user_id)  # Ensure we correctly check for NULL in the "UID" column
         .execute()
     )
     # Access the "data" attribute to get the actual result list

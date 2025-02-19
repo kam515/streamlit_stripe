@@ -7,6 +7,9 @@ def init_session_states():
     """
     defaults = {
         # project major things
+        "initiated_project": False,
+        "new_project": False,
+        "existing_project_selected": None,
         "project_id": None,
         "project_title": None,
         "project_dict": None, # output of the openai API call
