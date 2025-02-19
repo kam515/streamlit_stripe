@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import supabase
+import json
 # Local imports
 from models import Project
 from openai_client import get_openai_client
@@ -65,25 +66,28 @@ if st.session_state.new_project:
 # *SAVE_STATE_TO_DB* Biggest picture layer API call 
 system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
-    # Example of an OpenAI call that returns a Project object
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": system_message},
-            {
-                "role": "user",
-                "content": (
-                    f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
-                ),
-            },
-        ],
-        response_format=Project,
-) 
-    project_response = completion.choices[0].message.parsed
-    nested_dict = to_nested_dict(project_response)
-    st.write('nested_dict:')
+#     # Example of an OpenAI call that returns a Project object
+#     completion = client.beta.chat.completions.parse(
+#         model=MODEL,
+#         messages=[
+#             {"role": "system", "content": system_message},
+#             {
+#                 "role": "user",
+#                 "content": (
+#                     f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+#                 ),
+#             },
+#         ],
+#         response_format=Project,
+# ) 
+#     project_response = completion.choices[0].message.parsed
+    
+#     nested_dict = to_nested_dict(project_response)
+#     with open("data.txt", "w", encoding="utf-8") as file:
+#         json.dump(nested_dict, file)
+    with open("data.txt", "r", encoding="utf-8") as file:
+        nested_dict = json.load(file)
     st.session_state["project_dict"] = nested_dict
-    st.write(nested_dict)
     st.session_state["project_title"] = nested_dict["project_title"]
     project_type = "drafted workflow"
     st.session_state["generated_once"] = True
