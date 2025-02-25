@@ -68,7 +68,7 @@ system_message = "You are an expert strategic planner who creates first big pict
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
     prompt = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
     response_format = Project
-    nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
+    # nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
 #     with open("data.txt", "w", encoding="utf-8") as file:
 #         json.dump(nested_dict, file)
     with open("data.txt", "r", encoding="utf-8") as file:
