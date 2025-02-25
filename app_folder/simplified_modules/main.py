@@ -3,7 +3,7 @@ import pandas as pd
 import supabase
 import json
 # Local imports
-from models import Project
+from models import Project, making_openai_call
 from openai_client import get_openai_client
 from session_setup import (
     init_session_states, save_state, undo, redo
@@ -35,9 +35,9 @@ user_id = None
 # st.latex(r'''x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}''')
 if not st.session_state["initiated_project"]:
     col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
-    with col2:
+    with col2: # new
         st.session_state.new_project = st.button('+ New Project')
-    with col3:
+    with col3: # existing
         print(type(get_user_projects(user_id)))
         print(get_user_projects(user_id))
         user_projects = get_user_projects(user_id)
@@ -66,23 +66,9 @@ if st.session_state.new_project:
 # *SAVE_STATE_TO_DB* Biggest picture layer API call 
 system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
-#     # Example of an OpenAI call that returns a Project object
-#     completion = client.beta.chat.completions.parse(
-#         model=MODEL,
-#         messages=[
-#             {"role": "system", "content": system_message},
-#             {
-#                 "role": "user",
-#                 "content": (
-#                     f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
-#                 ),
-#             },
-#         ],
-#         response_format=Project,
-# ) 
-#     project_response = completion.choices[0].message.parsed
-    
-#     nested_dict = to_nested_dict(project_response)
+    prompt = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+    response_format = Project
+    nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
 #     with open("data.txt", "w", encoding="utf-8") as file:
 #         json.dump(nested_dict, file)
     with open("data.txt", "r", encoding="utf-8") as file:
@@ -90,30 +76,29 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     st.session_state["project_dict"] = nested_dict
     st.session_state["project_title"] = nested_dict["project_title"]
     project_type = "drafted workflow"
-    st.session_state["generated_once"] = True
-    st.session_state["current_layer"] = 0
-    st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+    # SAVING NEW PROJECT TO DB
     save_new_project(st.session_state["project_title"], project_type, user_id)
-
-
-# ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
-if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
-    st.write(st.session_state["project_dict"])
+    # FIRST LAYER DECONSTRUCTION:
+    st.session_state["generated_once"] = True
+    st.session_state["current_layer"] = 1
+    st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
     layer = st.session_state["project_dict"]["outline_layers"]
     layer_name = layer["layer_name"]
     outline_items = layer["outline_items"]
     df_data = pd.DataFrame(outline_items)
     df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
-    st.markdown('### df_data:')
-    st.dataframe(df_data)
+    # st.markdown('### df_data:')
+    # st.dataframe(df_data)
     project_id = get_project_metadata(st.session_state["project_title"], user_id)
-    print(project_id)
-    save_layer("outline_item", # field_type_id
-               st.session_state["prompt_for_current_layer"], # prompt for current layer
-               df_data, 
-               project_id, 
-               1
-               )
+    # SAVING LAYER THE FIRST TIME
+    field_type = 'outline_item'
+    prompt_for_field = st.session_state["prompt_for_current_layer"]
+    current_layer = 1
+    save_layer(field_type, prompt_for_field, df_data, project_id, current_layer)    
+
+
+# ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
+if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
 
 
     # Create local session states if not set
@@ -133,6 +118,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         elif direction == "down" and index < len(order) - 1:
             order[index], order[index + 1] = order[index + 1], order[index]
         st.session_state["order"] = order
+        st.rerun()
 
     def delete_row(index):
         save_state()
@@ -142,9 +128,11 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         data_local = data_local.drop(row_to_remove).reset_index(drop=True)
         st.session_state["order"] = list(range(len(data_local)))
         st.session_state["data"] = data_local
+        st.rerun()
 
     def edit_row(index):
         st.session_state["editing_row"] = index
+        st.rerun()
 
     def save_edit(index, new_desc):
         save_state()
@@ -153,6 +141,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         global_index = st.session_state["order"][index]
         st.session_state["data"].loc[global_index, "outline_text"] = new_desc
         st.session_state["editing_row"] = None
+        st.rerun()
 
     def add_row(position, new_desc=""):
         save_state()
@@ -227,25 +216,15 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         global_index = st.session_state["order"][idx]
                         st.write(st.session_state["data"].loc[global_index, "outline_text"])
 
-                        # CODE TO DEAL WITH LATER TO GET THE BUTTON TO DISAPPEAR
-                        # button_key = f"sublayer_gen_button_for{idx}"
-                        # # Only show the button if it hasn't been clicked
-                        # if not st.session_state["sublayer_button_clicked"]:
-                        #     gen_yn = st.button("Generate Sub-Items  >", key=button_key)
-
-                        #     if gen_yn:
-                        #         # Store button state in session state
-                        #         st.session_state["sublayer_button_clicked"][button_key] = True
-                        #         global_index = st.session_state["order"][idx]
-                        #         st.write(st.session_state["data"].loc[global_index, "outline_text"])
-
-
                 bottom_of_container = st.columns([4, 1, 4])
                 # Adds a row
                 add_item_center = bottom_of_container[1]
                 with add_item_center:
-                    if st.button("➕ Add Item", key=f"plus_{idx}"):
+                    if st.button("➕", key=f"plus_{idx}"):
                         add_row(idx)
+                        # skip saving to db!
+                        st.session_state['skip_saving_to_db'] = True
+                        st.rerun()
 
     
     st.session_state["project_dict"]["outline_layers"]["outline_items"] = (

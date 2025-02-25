@@ -22,7 +22,8 @@ def init_session_states():
         "order": None,
         "history": [],
         "redo_stack": [],
-        "editing_row": None
+        "editing_row": None,
+        'skip_saving_to_db': False
     }
     for k, v in defaults.items():
         if k not in st.session_state:

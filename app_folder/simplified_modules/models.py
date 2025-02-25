@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List, Optional
+from data_ops import to_nested_dict
 
 class VisibilityEnum(str, Enum):
     VISIBLE_CONTENT = "Visible Content"
@@ -37,3 +38,23 @@ class OutlineLayer(BaseModel):
 class Project(BaseModel):
     project_title: str
     outline_layers: OutlineLayer
+
+def making_openai_call(client, model, system_message, prompt, response_format):
+    completion = client.beta.chat.completions.parse(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_message},
+            {
+                "role": "user",
+                "content": (
+                    prompt
+                ),
+            },
+        ],
+        response_format=Project,
+    ) 
+    project_response = completion.choices[0].message.parsed
+
+    nested_dict = to_nested_dict(project_response)
+
+    return nested_dict

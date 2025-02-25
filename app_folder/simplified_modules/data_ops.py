@@ -47,7 +47,7 @@ def get_project_metadata(project_title, user_id):
         Client.table("projects")
         .select("project_id")
         .eq("project_title", project_title)
-        .is_("UID", user_id)  # Ensure we correctly check for NULL in the "UID" column
+        .is_("UID", user_id)  
         .execute()
     )
     # Access the "data" attribute to get the actual result list
@@ -70,7 +70,7 @@ def save_new_project(project_title, project_type, user_id):
             .execute()
             )
 
-def save_layer(field_type_id, prompt_for_field, df_data, project_id, current_layer):
+def save_layer(field_type, prompt_for_field, df_data, project_id, current_layer):
     for row_number, row in df_data.iterrows():  # Proper way to iterate over rows with index
         title = row['title']  # Access value by column name
         description = row['description']
@@ -79,7 +79,7 @@ def save_layer(field_type_id, prompt_for_field, df_data, project_id, current_lay
         layer_index = f"{current_layer}.{row_number}" 
         response = (
             Client.table("fields")
-            .insert({"field_type_id": field_type_id, 
+            .insert({"field_type": field_type, 
                      "prompt_for_field": prompt_for_field,
                      "title": title,
                      "description": description,
