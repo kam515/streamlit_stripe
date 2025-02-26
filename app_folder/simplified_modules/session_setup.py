@@ -23,7 +23,9 @@ def init_session_states():
         "history": [],
         "redo_stack": [],
         "editing_row": None,
-        'skip_saving_to_db': False
+        'skip_saving_to_db': False,
+        "prompty": None,
+        "layer_name": None
     }
     for k, v in defaults.items():
         if k not in st.session_state:

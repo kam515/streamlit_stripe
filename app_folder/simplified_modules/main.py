@@ -29,10 +29,7 @@ inject_css()
 # ========== User Info ==========
 user_id = None
 
-# ========== Form Section ==========
-
-# From testing latex earlier
-# st.latex(r'''x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}''')
+# ========== Options that appear first ==========
 if not st.session_state["initiated_project"]:
     col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
     with col2: # new
@@ -51,53 +48,57 @@ if st.session_state["existing_project_selected"]:
     st.session_state["initiated_project"] = True
     st.session_state["project_id"] = get_project_metadata(st.session_state["existing_project_selected"], user_id)
     st.write(f'Project {st.session_state["existing_project_selected"]} was selected.')
+    #TODO: add handling + pulling info for existing project
             
-
+# ========== Form Section ==========
 if st.session_state.new_project:
     st.session_state["initiated_project"] = True
     if not st.session_state["form_submitted"]:
         with st.form("my_form"):
-            prompty = st.text_input("What is the goal of your project?")
+            st.session_state.prompty = st.text_input("What is the goal of your project?")
             submit_col = st.columns([11, 2])[1]
             with submit_col:
                 if st.form_submit_button("Start my outline!"):
                     st.session_state["form_submitted"] = True
+                    st.rerun()
 
-# *SAVE_STATE_TO_DB* Biggest picture layer API call 
+# ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
 system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
-    prompt = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+    prompt = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {st.session_state.prompty}"
     response_format = Project
     # nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
 #     with open("data.txt", "w", encoding="utf-8") as file:
 #         json.dump(nested_dict, file)
     with open("data.txt", "r", encoding="utf-8") as file:
         nested_dict = json.load(file)
+    # ========== AFTER GENERATION--CREATE NEW PROJECT ========== 
     st.session_state["project_dict"] = nested_dict
     st.session_state["project_title"] = nested_dict["project_title"]
     project_type = "drafted workflow"
-    # SAVING NEW PROJECT TO DB
     save_new_project(st.session_state["project_title"], project_type, user_id)
-    # FIRST LAYER DECONSTRUCTION:
+    # ========== FIRST LAYER DECONSTRUCTION ==========
     st.session_state["generated_once"] = True
     st.session_state["current_layer"] = 1
-    st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {prompty}"
+    st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {st.session_state.prompty}"
     layer = st.session_state["project_dict"]["outline_layers"]
-    layer_name = layer["layer_name"]
+    st.session_state["layer_name"] = layer["layer_name"]
     outline_items = layer["outline_items"]
     df_data = pd.DataFrame(outline_items)
     df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
-    # st.markdown('### df_data:')
-    # st.dataframe(df_data)
+    # ========== GATHERING INFO + SAVING LAYER THE FIRST TIME ==========
     project_id = get_project_metadata(st.session_state["project_title"], user_id)
-    # SAVING LAYER THE FIRST TIME
-    field_type = 'outline_item'
+    field_types = ['outline_item' for i in outline_items] # all will be type outline_item for first layer
     prompt_for_field = st.session_state["prompt_for_current_layer"]
-    current_layer = 1
-    save_layer(field_type, prompt_for_field, df_data, project_id, current_layer)    
+    current_layer = st.session_state["current_layer"]
+    save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)    
+
+# ========== *SAVE_STATE_TO_DB* Build Dataframe for layers after the first layer ==========
+def build_layer(client, MODEL, system_message, prompt, response_format):
+    #TODO Write build layer function
+    return
 
 
-# ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
 if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
 
 
@@ -164,7 +165,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
     # *SAVE_STATE_TO_DB* Navigate to previous layer (if it exists--otherwise don't allow the button to be pressed and show a helper text)
     if st.button("<  Bigger Picture"):
         st.info("Will navigate to an earlier outline layer (future feature).")
-
+    layer_name = st.session_state["layer_name"]
     st.markdown(f"<h2 style='text-align:center;'>{layer_name}</h2>", unsafe_allow_html=True)
     st.write("---")
 

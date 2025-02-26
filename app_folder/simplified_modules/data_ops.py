@@ -70,13 +70,14 @@ def save_new_project(project_title, project_type, user_id):
             .execute()
             )
 
-def save_layer(field_type, prompt_for_field, df_data, project_id, current_layer):
+def save_layer(field_types, prompt_for_field, df_data, project_id, current_layer):
     for row_number, row in df_data.iterrows():  # Proper way to iterate over rows with index
         title = row['title']  # Access value by column name
         description = row['description']
         criteria_for_success = row['criteria_for_success']
         justification = row['justification']
         layer_index = f"{current_layer}.{row_number}" 
+        field_type = field_types[row_number-1] # getting correct index in field_types
         response = (
             Client.table("fields")
             .insert({"field_type": field_type, 
