@@ -51,7 +51,7 @@ def making_openai_call(client, model, system_message, prompt, response_format):
                 ),
             },
         ],
-        response_format=Project,
+        response_format=response_format,
     ) 
     project_response = completion.choices[0].message.parsed
 

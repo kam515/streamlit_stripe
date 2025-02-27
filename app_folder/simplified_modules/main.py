@@ -94,8 +94,29 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)    
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for layers after the first layer ==========
+def gather_project_dict(project_id):
+    response = Client.table("fields") \
+    .select("* distinct on (layer_index)") \
+    .eq("project_id", project_id) \
+    .order("layer_index") \
+    .order("field_datetime", desc=True) \
+    .execute()
+    nested_dict = to_nested_dict(response)
+    return nested_dict
+
+def get_list_of_field_records_from_dict(dict_):
+    list_of_field_records = dict_['data']
+    return list_of_field_records
+
+
+def build_prompt_for_sub_layer_gen():
+    #TODO need to grab info
+    return 
+
 def build_layer(client, MODEL, system_message, prompt, response_format):
-    #TODO Write build layer function
+    nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
+
+    save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)
     return
 
 
@@ -212,6 +233,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                             gen_yn = st.button("Generate Sub-Items  >", key=f"sublayer_gen_button_for{idx}_")
                             if gen_yn:
                                 st.session_state[f"sublayer_gen_button_for{idx}"] = True
+                                print(row)
                                 st.rerun()
                     if st.session_state[f"sublayer_gen_button_for{idx}"]:
                         global_index = st.session_state["order"][idx]
