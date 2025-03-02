@@ -6,6 +6,10 @@ from supabase import create_client, Client
 sb_url = st.secrets["supabase_info"]["sb_url"]
 sb_key = st.secrets["supabase_info"]["sb_key"]
 Client = create_client(sb_url, sb_key)
+from datetime import datetime
+from itertools import groupby
+from operator import itemgetter
+import pprint
 
 def to_nested_dict(obj):
     """
@@ -71,6 +75,8 @@ def save_new_project(project_title, project_type, user_id):
             )
 
 def save_layer(field_types, prompt_for_field, df_data, project_id, current_layer):
+    # layer name
+    #TODO: add layer name to this function and save it as a field "like 1." so it would always be sorted first--even before 0
     for row_number, row in df_data.iterrows():  # Proper way to iterate over rows with index
         title = row['title']  # Access value by column name
         description = row['description']
@@ -91,4 +97,31 @@ def save_layer(field_types, prompt_for_field, df_data, project_id, current_layer
                      })
             .execute()
             )
+
+def gather_project_dict(project_id):
+    response = Client.table("fields") \
+    .select("* distinct on (layer_index)") \
+    .eq("project_id", project_id) \
+    .order("layer_index") \
+    .order("field_datetime", desc=True) \
+    .execute()
+    nested_dict = to_nested_dict(response)
+    return nested_dict
+
+def get_list_of_field_records_from_dict(dict_):
+    list_of_field_records = dict_['data']
+    # make df with cols field_id, field_type, prompt_for_field, project_id, field_datetime, 
+    for record in list_of_field_records:
+        if isinstance(record["field_datetime"], str):  # Convert only if still a string
+            record["field_datetime"] = datetime.fromisoformat(record["field_datetime"])
+    # Sort by layer_index first, then by field_datetime (latest first)
+    list_of_field_records.sort(key=lambda x: (x["layer_index"], x["field_datetime"]), reverse=True)
+    # Use groupby to keep only the most recent entry per layer_index
+    list_filtered = [next(group) for _, group in groupby(list_of_field_records, key=itemgetter("layer_index"))]
+    # Convert datetime back to string if needed
+    for record in list_filtered:
+        record["field_datetime"] = record["field_datetime"].isoformat()
+    list_filtered.sort(key=lambda x: (x["layer_index"]))
+    pprint.pprint(list_filtered)
+    return list_filtered
 

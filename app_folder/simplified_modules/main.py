@@ -2,13 +2,17 @@ import streamlit as st
 import pandas as pd
 import supabase
 import json
+from datetime import datetime
+from itertools import groupby
+from operator import itemgetter
+import pprint
 # Local imports
-from models import Project, making_openai_call
+from models import Project, making_openai_call, making_openai_call_sublayer
 from openai_client import get_openai_client
 from session_setup import (
     init_session_states, save_state, undo, redo
 )
-from data_ops import to_nested_dict, get_project_metadata, save_new_project, save_layer, get_user_projects
+from data_ops import to_nested_dict, get_project_metadata, save_new_project, save_layer, get_user_projects, gather_project_dict, get_list_of_field_records_from_dict
 from ui_components import inject_css, create_container_with_color
 from supabase import create_client, Client
 
@@ -35,8 +39,6 @@ if not st.session_state["initiated_project"]:
     with col2: # new
         st.session_state.new_project = st.button('+ New Project')
     with col3: # existing
-        print(type(get_user_projects(user_id)))
-        print(get_user_projects(user_id))
         user_projects = get_user_projects(user_id)
         st.session_state["existing_project_selected"] = st.selectbox(
             "Select an existing project:",
@@ -48,7 +50,15 @@ if st.session_state["existing_project_selected"]:
     st.session_state["initiated_project"] = True
     st.session_state["project_id"] = get_project_metadata(st.session_state["existing_project_selected"], user_id)
     st.write(f'Project {st.session_state["existing_project_selected"]} was selected.')
-    #TODO: add handling + pulling info for existing project
+    st.write(f'PROJECT ID PICKED: ', st.session_state["project_id"])
+    list_for_testing = get_list_of_field_records_from_dict(gather_project_dict(st.session_state["project_id"]))
+    for l in list_for_testing:
+        st.write('#'*50)
+        st.write(l)
+    st.session_state.prompty = list_for_testing[0]['prompt_for_field'].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
+    # st.write(list_for_testing)
+    st.write('#'*50)
+    st.write(st.session_state.prompty)
             
 # ========== Form Section ==========
 if st.session_state.new_project:
@@ -80,7 +90,7 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     # ========== FIRST LAYER DECONSTRUCTION ==========
     st.session_state["generated_once"] = True
     st.session_state["current_layer"] = 1
-    st.session_state["prompt_for_current_layer"] = f"system_message: {system_message} Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {st.session_state.prompty}"
+    st.session_state["prompt_for_current_layer"] = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {st.session_state.prompty}"
     layer = st.session_state["project_dict"]["outline_layers"]
     st.session_state["layer_name"] = layer["layer_name"]
     outline_items = layer["outline_items"]
@@ -89,35 +99,24 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     # ========== GATHERING INFO + SAVING LAYER THE FIRST TIME ==========
     project_id = get_project_metadata(st.session_state["project_title"], user_id)
     field_types = ['outline_item' for i in outline_items] # all will be type outline_item for first layer
-    prompt_for_field = st.session_state["prompt_for_current_layer"]
+    prompt_for_field = st.session_state["prompt_for_current_layer"].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
     current_layer = st.session_state["current_layer"]
     save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)    
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for layers after the first layer ==========
-def gather_project_dict(project_id):
-    response = Client.table("fields") \
-    .select("* distinct on (layer_index)") \
-    .eq("project_id", project_id) \
-    .order("layer_index") \
-    .order("field_datetime", desc=True) \
-    .execute()
-    nested_dict = to_nested_dict(response)
-    return nested_dict
 
-def get_list_of_field_records_from_dict(dict_):
-    list_of_field_records = dict_['data']
-    return list_of_field_records
+# list_for_testing = get_list_of_field_records_from_dict(gather_project_dict(17))
+# st.write('LIST FOR TESTING')
+# st.write(list_for_testing)
 
-
-def build_prompt_for_sub_layer_gen():
+def build_prompt_for_sub_layer_gen(original_project_goal, ):
     #TODO need to grab info
     return 
 
-def build_layer(client, MODEL, system_message, prompt, response_format):
-    nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
-
+def build_sub_layer(client, MODEL, system_message, prompt):
+    nested_dict = making_openai_call_sublayer(client, MODEL, system_message, prompt)
     save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)
-    return
+    return nested_dict
 
 
 if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 

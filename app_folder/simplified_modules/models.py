@@ -58,3 +58,23 @@ def making_openai_call(client, model, system_message, prompt, response_format):
     nested_dict = to_nested_dict(project_response)
 
     return nested_dict
+
+def making_openai_call_sublayer(client, model, system_message, prompt, response_format=OutlineLayer):
+    completion = client.beta.chat.completions.parse(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_message},
+            {
+                "role": "user",
+                "content": (
+                    prompt
+                ),
+            },
+        ],
+        response_format=response_format,
+    ) 
+    project_response = completion.choices[0].message.parsed
+
+    nested_dict = to_nested_dict(project_response)
+
+    return nested_dict
