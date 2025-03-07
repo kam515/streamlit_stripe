@@ -70,7 +70,7 @@ if st.session_state.new_project:
             with submit_col:
                 if st.form_submit_button("Start my outline!"):
                     st.session_state["form_submitted"] = True
-                    st.rerun()
+                    # st.rerun()
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for the first layer ==========
 system_message = "You are an expert strategic planner who creates first big picture outlines that comprehensively accomplish the stated goal. You provide clear descriptions and justification."
@@ -108,20 +108,27 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
 # list_for_testing = get_list_of_field_records_from_dict(gather_project_dict(17))
 # st.write('LIST FOR TESTING')
 # st.write(list_for_testing)
+original_project_goal = st.session_state.prompty
+# title_of_layer = 
+def build_prompt_for_sub_layer_gen(original_project_goal, title_and_desc_of_layer):
+    prompt = f"""
+    Big picture project goal: \"{original_project_goal}\"
+    Current phase of the project we are planning: \"{title_and_desc_of_layer}\"
+    Make an outline of the full process of achieving the current phase goal with about 2-5 items.
+    """
+    return prompt
 
-def build_prompt_for_sub_layer_gen(original_project_goal, ):
-    #TODO need to grab info
-    return 
-
-def build_sub_layer(client, MODEL, system_message, prompt):
+def build_sub_layer(client, MODEL, system_message, prompt, idx):
     nested_dict = making_openai_call_sublayer(client, MODEL, system_message, prompt)
-    save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)
+    current_layer = str(st.session_state["current_layer"]) + "." + str(idx)
+    df_data = pd.DataFrame(nested_dict['outline_items'])
+    field_types = ['outline_item' for i in nested_dict['outline_items']]
+    project_id = get_project_metadata(st.session_state["project_title"], user_id)
+    save_layer(field_types, prompt, df_data, project_id, current_layer)
     return nested_dict
 
 
 if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
-
-
     # Create local session states if not set
     if st.session_state["data"] is None:
         st.session_state["data"] = df_data.copy()
@@ -232,11 +239,19 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                             gen_yn = st.button("Generate Sub-Items  >", key=f"sublayer_gen_button_for{idx}_")
                             if gen_yn:
                                 st.session_state[f"sublayer_gen_button_for{idx}"] = True
-                                print(row)
+                                title_and_desc_of_layer = row['title'] + ": " + row['description']
+                                st.session_state.prompt_for_sublayer = build_prompt_for_sub_layer_gen(original_project_goal, title_and_desc_of_layer)
                                 st.rerun()
                     if st.session_state[f"sublayer_gen_button_for{idx}"]:
                         global_index = st.session_state["order"][idx]
-                        st.write(st.session_state["data"].loc[global_index, "outline_text"])
+                        dict_of_sublayer = build_sub_layer(client, MODEL, system_message, st.session_state.prompt_for_sublayer, global_index)
+                        for outline_item in dict_of_sublayer["outline_items"]:
+                            st.markdown(f"- {outline_item['title']}: {outline_item['description']}")
+                        go_to_level = st.button('Zoom in 🔍')
+                        if go_to_level:
+                            # change state and rerun
+                            ...
+                        
 
                 bottom_of_container = st.columns([4, 1, 4])
                 # Adds a row

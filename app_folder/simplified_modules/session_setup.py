@@ -25,7 +25,8 @@ def init_session_states():
         "editing_row": None,
         'skip_saving_to_db': False,
         "prompty": None,
-        "layer_name": None
+        "layer_name": None,
+        "prompt_for_sublayer": None
     }
     for k, v in defaults.items():
         if k not in st.session_state:
