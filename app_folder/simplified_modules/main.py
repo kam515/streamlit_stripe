@@ -47,18 +47,23 @@ if not st.session_state["initiated_project"]:
         )
 
 if st.session_state["existing_project_selected"]:
+    st.session_state["layer_name"] = st.session_state["existing_project_selected"]
     st.session_state["initiated_project"] = True
+    st.session_state["generated_once"] = True
     st.session_state["project_id"] = get_project_metadata(st.session_state["existing_project_selected"], user_id)
     st.write(f'Project {st.session_state["existing_project_selected"]} was selected.')
     st.write(f'PROJECT ID PICKED: ', st.session_state["project_id"])
-    list_for_testing = get_list_of_field_records_from_dict(gather_project_dict(st.session_state["project_id"]))
-    for l in list_for_testing:
-        st.write('#'*50)
-        st.write(l)
+    st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
+    st.write(st.session_state["project_dict"].keys())
+    list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
     st.session_state.prompty = list_for_testing[0]['prompt_for_field'].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
-    # st.write(list_for_testing)
-    st.write('#'*50)
-    st.write(st.session_state.prompty)
+    df_data = pd.DataFrame(list_for_testing)
+    st.write(df_data)
+    st.session_state["current_layer"] = 1
+    df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
+    df_data_complete = ... # ORIGINAL DF
+    df_data = df_data[df_data['layer_index'].str.count(r'\.') == 1]
+    
             
 # ========== Form Section ==========
 if st.session_state.new_project:
@@ -235,7 +240,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                     with st.columns([4, 2, 3.2])[1]:
                         if f"sublayer_gen_button_for{idx}" not in st.session_state:
                             st.session_state[f"sublayer_gen_button_for{idx}"] = False
-                        if not st.session_state[f"sublayer_gen_button_for{idx}"]:
+                        if not st.session_state[f"sublayer_gen_button_for{idx}"]: # NEED TO ADD CONDITION TO DISPLAY SUBLAYER IF IT ALREADY EXISTS
                             gen_yn = st.button("Generate Sub-Items  >", key=f"sublayer_gen_button_for{idx}_")
                             if gen_yn:
                                 st.session_state[f"sublayer_gen_button_for{idx}"] = True
@@ -247,12 +252,12 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         dict_of_sublayer = build_sub_layer(client, MODEL, system_message, st.session_state.prompt_for_sublayer, global_index)
                         for outline_item in dict_of_sublayer["outline_items"]:
                             st.markdown(f"- {outline_item['title']}: {outline_item['description']}")
-                        go_to_level = st.button('Zoom in 🔍')
+                        go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{idx}")
                         if go_to_level:
-                            # change state and rerun
-                            ...
+                            st.write('Will navigate to sublayer--to be added later')
+                            st.write(f'WILL SHIFT TO NEW LAYER: {st.session_state["current_layer"] + 1} AT INDEX {global_index}')
+                            st.write('Will also need to save the current layer + order to fields and feedback tables')
                         
-
                 bottom_of_container = st.columns([4, 1, 4])
                 # Adds a row
                 add_item_center = bottom_of_container[1]
@@ -264,7 +269,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         st.rerun()
 
     
-    st.session_state["project_dict"]["outline_layers"]["outline_items"] = (
-        st.session_state["data"].to_dict(orient="records")
-    )
+    # st.session_state["project_dict"]["outline_layers"]["outline_items"] = (
+    #     st.session_state["data"].to_dict(orient="records")
+    # )
 

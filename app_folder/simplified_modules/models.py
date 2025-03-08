@@ -22,11 +22,6 @@ class OutlineItem(BaseModel):
     description: str = Field(..., description="Reasoning for this section.")
     criteria_for_success: str = Field(..., description="Success criteria.")
     justification: str = Field(..., description="Why it meets success criteria.")
-    # visible_content_or_invisible_description: VisibilityEnum = Field(
-    #     ..., description="Must be 'Visible Content' or 'Invisible Description'."
-    # )
-    # element: Optional[ElementEnum] = None
-    # visible_content: Optional[str] = None
 
 class OutlineLayer(BaseModel):
     layer_name: str = Field(..., description="1-3 word title for this outline layer.")
