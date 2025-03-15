@@ -264,7 +264,8 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         sublayer_bool = True
                         for outline_item in dict_of_sublayer["outline_items"]:
                             st.markdown(f"- {outline_item['title']}: {outline_item['description']}")
-                        go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{idx}")
+                        with st.columns([10, 1])[1]:
+                            go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{idx}")
                         if go_to_level:
                             st.write('Will navigate to sublayer--to be added later')
                             st.write(f'WILL SHIFT TO NEW LAYER: {st.session_state["current_layer"] + 1} AT INDEX {global_index}')
@@ -276,14 +277,13 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         sublayer_df = df_data_complete[(df_data_complete["layer_index"].str.count(r'\.') == current_layer + 1) & (df_data_complete["layer_index"].str.startswith(row["layer_index"] + "."))]
                         for sub_idx, sub_row in sublayer_df.iterrows():
                             st.markdown(f"- {sub_row['title']}: {sub_row['description']}")
-                        go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{idx}")
+                        with st.columns([10, 1])[1]:
+                            go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{idx}")
                         if go_to_level:
                             st.write('Will navigate to sublayer--to be added later')
                             st.write(f'WILL SHIFT TO NEW LAYER: {st.session_state["current_layer"] + 1} AT INDEX {global_index}')
                             st.write('Will also need to save the current layer + order to fields and feedback tables')
-
-
-                        
+       
                 bottom_of_container = st.columns([4, 1, 4])
                 # Adds a row
                 add_item_center = bottom_of_container[1]
