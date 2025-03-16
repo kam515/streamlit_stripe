@@ -124,4 +124,3 @@ def get_list_of_field_records_from_dict(dict_):
     list_filtered.sort(key=lambda x: (x["layer_index"]))
     pprint.pprint(list_filtered)
     return list_filtered
-
