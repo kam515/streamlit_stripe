@@ -83,11 +83,11 @@ system_message = "You are an expert strategic planner who creates first big pict
 if st.session_state["form_submitted"] and not st.session_state["generated_once"]:
     prompt = f"Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: {st.session_state.prompty}"
     response_format = Project
-    # nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
+    nested_dict = making_openai_call(client, MODEL, system_message, prompt, response_format)
 #     with open("data.txt", "w", encoding="utf-8") as file:
 #         json.dump(nested_dict, file)
-    with open("data.txt", "r", encoding="utf-8") as file:
-        nested_dict = json.load(file)
+    # with open("data.txt", "r", encoding="utf-8") as file:
+    #     nested_dict = json.load(file)
     # ========== AFTER GENERATION--CREATE NEW PROJECT ========== 
     st.session_state["project_dict"] = nested_dict
     st.session_state["project_title"] = nested_dict["project_title"]
@@ -237,7 +237,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
     if st.session_state["order"] is None:
         st.session_state["order"] = list(range(len(df_data)))
     if st.session_state["switch_action"]:
-        st.session_state["project_dict"] = gather_project_dict(17)
+        st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
         list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
         df_data = pd.DataFrame(list_for_testing)
         df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
