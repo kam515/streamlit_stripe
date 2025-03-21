@@ -34,6 +34,9 @@ inject_css()
 # ========== User Info ==========
 user_id = None
 
+with st.sidebar:
+    st.write('Navigation buttons will go here')
+
 # ========== Options that appear first ==========
 if not st.session_state["initiated_project"]:
     col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
@@ -52,14 +55,11 @@ if st.session_state["existing_project_selected"] and not st.session_state["gener
     st.session_state["initiated_project"] = True
     st.session_state["generated_once"] = True
     st.session_state["project_id"] = get_project_metadata(st.session_state["existing_project_selected"], user_id)
-    st.write(f'Project {st.session_state["existing_project_selected"]} was selected.')
-    st.write(f'PROJECT ID PICKED: ', st.session_state["project_id"])
+    st.session_state["project_title"] = st.session_state["existing_project_selected"]
     st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
-    st.write(st.session_state["project_dict"].keys())
     list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
     st.session_state.prompty = list_for_testing[0]['prompt_for_field'].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
     df_data = pd.DataFrame(list_for_testing)
-    st.write(df_data)
     st.session_state["current_layer_index"] = "1."
     df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
     st.session_state["df_data_complete"] = df_data.copy()
@@ -108,7 +108,18 @@ if st.session_state["form_submitted"] and not st.session_state["generated_once"]
     field_types = ['outline_item' for i in outline_items] # all will be type outline_item for first layer
     prompt_for_field = st.session_state["prompt_for_current_layer"].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
     current_layer = st.session_state["current_layer_index"].replace(".", "")
-    save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)    
+    save_layer(field_types, prompt_for_field, df_data, project_id, current_layer)
+    
+    st.session_state["project_id"] = get_project_metadata(st.session_state["project_title"], user_id)
+    st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
+    list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
+    st.session_state.prompty = list_for_testing[0]['prompt_for_field'].replace("Make a comprehensive big picture outline of the full process of achieving this goal with about 2-5 items: ", "")
+    df_data = pd.DataFrame(list_for_testing)
+    st.session_state["current_layer_index"] = "1."
+    df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
+    st.session_state["df_data_complete"] = df_data.copy()
+    df_data = df_data[df_data['layer_index'].str.count(r'\.') == 1]
+
 
 # ========== *SAVE_STATE_TO_DB* Build Dataframe for layers after the first layer ==========
 
@@ -125,22 +136,91 @@ def build_prompt_for_sub_layer_gen(original_project_goal, title_and_desc_of_laye
     """
     return prompt
 
-def build_sub_layer(client, MODEL, system_message, prompt, idx):
+def build_sub_layer(client, MODEL, system_message, prompt, sesh_state_current_layer_index, sesh_state_project_title):
+    print('###################IN BUILD SUBLAYER FUNCTION###################')
     nested_dict = making_openai_call_sublayer(client, MODEL, system_message, prompt)
-    current_layer = str(st.session_state["current_layer_index"]) + str(idx)
+    current_layer = str(sesh_state_current_layer_index) #+ str(idx)
+    print('current_layer: ', current_layer)
     df_data = pd.DataFrame(nested_dict['outline_items'])
+    print(f'df_data (FROM CALL) shape: ')
+    print(df_data.shape)
     field_types = ['outline_item' for i in nested_dict['outline_items']]
-    project_id = get_project_metadata(st.session_state["project_title"], user_id)
+    project_id = get_project_metadata(sesh_state_project_title, user_id)
+    print(project_id)
     save_layer(field_types, prompt, df_data, project_id, current_layer)
     return nested_dict
 
 def check_for_sublayer(row, df_data_complete):
     sublayer_bool = False
     current_layer_idx = row["layer_index"]
+    print('IN CHECK FOR SUBLAYER FUNCTION')
+    print(f'current_layer_idx: {current_layer_idx}')
     df_indices_for_project = list(df_data_complete["layer_index"].unique())
+    print(f'df_indices_for_project: {df_indices_for_project}')
     if str(current_layer_idx) + ".0" in df_indices_for_project:
         sublayer_bool = True
     return sublayer_bool
+
+def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_index, project_title=st.session_state["project_title"]):
+    """
+    Handles "zoom in" / "zoom out" logic based on current_layer_index.
+    Returns (new_layer_df, layer_name).
+    """
+    print("Entered render_existing_layer function.")
+
+    df_data_complete = sesh_state_df_data_complete
+    print("All layer_index values in df_data_complete:", list(df_data_complete["layer_index"].unique()))
+
+    current_layer_period_count = current_layer_index.count('.')
+    print(f"Current layer index: {current_layer_index}")
+    print(f"current_layer_period_count: {current_layer_period_count}")
+
+    if direction == "down":
+        print("Direction is DOWN")
+        # Filter for the current layer first to safely retrieve the layer_name
+        filtered_down = df_data_complete[df_data_complete["layer_index"] == current_layer_index]
+        if not filtered_down.empty:
+            layer_name = filtered_down["title"].iloc[0]
+        else:
+            # Fallback if there's no row matching current_layer_index
+            layer_name = project_title
+
+        # Now retrieve all rows that are exactly one more period deeper
+        new_layer_df = df_data_complete[
+            (df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count + 1) &
+            (df_data_complete["layer_index"].str.startswith(current_layer_index + "."))
+        ]
+        print(f"Layer name: {layer_name}")
+        print(f"new_layer_df shape: {new_layer_df.shape}")
+
+    else:
+        print("Direction is UP")
+        # Remove the last ".x" from current_layer_index
+        layer_index_up = re.sub(r'\.[^.]*$', '', current_layer_index)
+        print("layer_index_up:", layer_index_up)
+
+        # Next level up might require removing the next dot chunk
+        layer_previx_up = re.sub(r'\.[^.]*$', '', layer_index_up)
+        print("layer_previx_up:", layer_previx_up)
+
+        # Filter for the parent's parent index to retrieve layer_name
+        filtered_up = df_data_complete[df_data_complete["layer_index"] == layer_previx_up]
+        if not filtered_up.empty:
+            layer_name = filtered_up["title"].iloc[0]
+        else:
+            # Default to project_title if we can't find a match
+            layer_name = project_title
+
+        print(f"Layer name: {layer_name}")
+        # Now retrieve all rows that are exactly one fewer period (the parent's siblings)
+        new_layer_df = df_data_complete[
+            (df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count - 1) &
+            (df_data_complete["layer_index"].str.startswith(layer_previx_up + "."))
+        ]
+        print(f"new_layer_df shape: {new_layer_df.shape}")
+
+    return new_layer_df, layer_name
+
 
 def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_index, project_title=st.session_state["project_title"]):
     """
@@ -153,29 +233,31 @@ def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_
     """
     print('made it in function')
     df_data_complete = sesh_state_df_data_complete
-    print('df_data_complete_retrieved')
+    print('layer indices in retrieved df_data_complete: ', list(df_data_complete['layer_index'].unique()))
     # filter df_data_complete for rows where df_data_complete["layer_index"] has current_layer (int) + 1 periods in it and has row["layer_index"] (str) preceding the last period
     current_layer_period_count = current_layer_index.count('.')
     print(f"current_layer_period_count: {current_layer_period_count}")
+    print('current_layer_index: ', current_layer_index)
     if direction == "down":
         print("got in down condition")
         layer_name = df_data_complete[df_data_complete["layer_index"]==current_layer_index]["title"].iloc[0]
         new_layer_df = df_data_complete[(df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count + 1) & (df_data_complete["layer_index"].str.startswith(current_layer_index + "."))]
         print(f"layer_name: {layer_name}")
-        print(f"new_layer_df: {new_layer_df}")
+        print(f"new_layer_df shape: {new_layer_df.shape}")
     else:
         print("got in up condition")
         layer_index_up = str(re.sub(r'\.[^.]*$', '', current_layer_index))
         print(f"layer_index_up: {layer_index_up}")
         layer_previx_up = re.sub(r'\.[^.]*$', '', layer_index_up)
         print(f"layer_previx_up: {layer_previx_up}")
-        if layer_previx_up != 1:
-            layer_name = df_data_complete[df_data_complete["layer_index"]==layer_index_up]["title"].iloc[0]
-        else:
+        
+        try:
+            layer_name = df_data_complete[df_data_complete["layer_index"]==layer_previx_up]["title"].iloc[0]
+        except:
             layer_name = project_title
         print(f"layer_name: {layer_name}")
         new_layer_df = df_data_complete[(df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count - 1) & (df_data_complete["layer_index"].str.startswith(layer_previx_up + "."))]
-        print(f"new_layer_df: {new_layer_df}")
+        print(f"new_layer_df shape: {new_layer_df.shape}")
     # for sub_idx, sub_row in sublayer_df.iterrows():
     #     st.markdown(f"- {sub_row['title']}: {sub_row['description']}")
     return new_layer_df, layer_name
@@ -185,38 +267,26 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
     if st.session_state["data"] is None:
         st.session_state["data"] = df_data.copy()
         print('set session state for data')
+        print(df_data.columns)
+        print(df_data.head(2))
     if st.session_state["order"] is None:
         st.session_state["order"] = list(range(len(df_data)))
         print('set session state for order')
     if st.session_state["switch_action"]:
         print('SWITCH ACTION TRIGGERED!')
-        st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
+        st.session_state["project_dict"] = gather_project_dict(17)
         list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
         df_data = pd.DataFrame(list_for_testing)
         df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
         st.session_state["df_data_complete"] = df_data.copy()
-        print(f'st.session_state["current_layer_index"]: {st.session_state["current_layer_index"]}')
-        print(f'st.session_state["direction"]: {st.session_state["direction"]}')
         current_layer_index = st.session_state["current_layer_index"]
-        print(f'layer index before getting the layer: {current_layer_index}')
         direction = st.session_state["direction"]
         st.session_state["data"], st.session_state["layer_name"] = render_existing_layer(st.session_state["df_data_complete"], direction, current_layer_index)
         st.session_state["order"] = list(range(len(st.session_state["data"])))
-        st.session_state["current_layer_index"] = st.session_state["data"]["layer_index"].iloc[0]
-        print(f'layer index after getting the layer: {st.session_state["current_layer_index"]}')
+        st.session_state["current_layer_index"] = st.session_state["data"]["layer_index"]
         st.session_state["switch_action"] = False
-        print('got through completing switch action without error')
 
-    #     if st.session_state[f"zoom_in_button_for{idx}"]:
-    #         # THAT MEANS WE'VE SWITCHED!
-    #         print('got in else condition')
-    #         print(f'st.session_state["current_layer_index"]: {st.session_state["current_layer_index"]}')
-    #         print(f'st.session_state["direction"]: {st.session_state["direction"]}')
-    #         current_layer_index = st.session_state["current_layer_index"]
-    #         direction = st.session_state["direction"]
-    #         st.session_state["data"], st.session_state["layer_name"] = render_existing_layer(st.session_state["df_data_complete"], direction, current_layer_index)
-    #         st.session_state["order"] = list(range(len(st.session_state["data"])))
-
+    print('ABOUT TO MAKE TABLES')
 
     # ========== Utility Functions for the Data Table ==========
     def move_row(index, direction):
@@ -239,6 +309,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         st.session_state["data"] = data_local
         st.rerun()
 
+
     def edit_row(index):
         st.session_state["editing_row"] = index
         st.rerun()
@@ -252,15 +323,62 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         st.session_state["editing_row"] = None
         st.rerun()
 
-    def add_row(position, new_desc=""):
+    # def add_row(position, new_desc=""):
+    #     save_state()
+    #     data_local = st.session_state["data"]
+    #     order_local = st.session_state["order"]
+    #     new_id = (data_local.index.max() + 1) if not data_local.empty else 0
+    #     # new_row = pd.DataFrame({"outline_text": [new_desc]}, index=[new_id])
+    #     new_row = pd.DataFrame({col: [None] for col in data_local.columns}, index=[new_id])
+    #     new_row["outline_text"] = new_desc
+    #     st.session_state["data"] = pd.concat([data_local, new_row])
+    #     order_local.insert(position + 1, new_id)
+    #     st.session_state["order"] = order_local
+
+    def add_row(position, field_id="", field_type="", prompt_for_field="", project_id="",
+                field_datetime="", layer_index="", title="", description="",
+                criteria_for_success="", justification="", outline_text=""):
         save_state()
         data_local = st.session_state["data"]
-        order_local = st.session_state["order"]
-        new_id = (data_local.index.max() + 1) if not data_local.empty else 0
-        new_row = pd.DataFrame({"outline_text": [new_desc]}, index=[new_id])
-        st.session_state["data"] = pd.concat([data_local, new_row])
-        order_local.insert(position + 1, new_id)
-        st.session_state["order"] = order_local
+        order = st.session_state["order"]
+        # Determine the previous layer index
+        if position == 0:
+            prev_layer_index = "_"
+        else:
+            prev_layer_index = str(data_local.iloc[position - 1]["layer_index"])
+        # Determine the next layer index
+        if position >= len(data_local):
+            next_layer_index = "_"
+        else:
+            next_layer_index = str(data_local.iloc[position]["layer_index"])
+        # Overwrite layer_index for new row
+        computed_layer_index = prev_layer_index + next_layer_index
+        # Prepare new row with desired columns
+        new_row = {
+            "field_id": field_id,
+            "field_type": field_type,
+            "prompt_for_field": prompt_for_field,
+            "project_id": project_id,
+            "field_datetime": field_datetime,
+            "layer_index": computed_layer_index,
+            "title": title,
+            "description": description,
+            "criteria_for_success": criteria_for_success,
+            "justification": justification,
+            "outline_text": outline_text
+        }
+        # Split data at position, then insert new row
+        before = data_local.iloc[:position]
+        after = data_local.iloc[position:]
+        data_local = pd.concat([before, pd.DataFrame([new_row]), after]).reset_index(drop=True)
+        # Update session state
+        st.session_state["data"] = data_local
+        st.session_state["order"] = list(range(len(data_local)))
+        st.rerun()
+
+
+
+
 
     ## RENDERING CURRENT LAYER ##
     # ========== Undo/Redo Buttons ==========
@@ -271,20 +389,19 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         st.button("↻", on_click=redo, disabled=not st.session_state["redo_stack"], help="Redo")
 
     # *SAVE_STATE_TO_DB* Navigate to previous layer (if it exists--otherwise don't allow the button to be pressed and show a helper text)
-    if st.button("<  Bigger Picture"):
-        """
-        Let's say my current layer is 1.0.x
-        Bigger picture is 1.x
-        """
+    # WILL FIGURE OUT THE DISABLED THINGY SOON: st.button("<  Bigger Picture", disabled=True, key="dummy_button")
+    if st.button("<  Zoom Out"):
         st.session_state["direction"] = "up"
         st.session_state["switch_action"] = True
         st.rerun()
+
 
     layer_name = st.session_state["layer_name"]
     st.markdown(f"<h2 style='text-align:center;'>{layer_name}</h2>", unsafe_allow_html=True)
     st.write("---")
 
     ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
+
 
     if ordered_data.empty:
         st.write("No items yet.")
@@ -321,6 +438,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                 # *SAVE_STATE_TO_DB* Future sub-layer expansion
                 with row_cols[2]:
                     sublayer_bool = check_for_sublayer(row, st.session_state["df_data_complete"])
+                    print("sublayer_bool: ", sublayer_bool)
                     st.session_state["current_layer_index"] = row["layer_index"]
                     current_layer_index = st.session_state["current_layer_index"]
                     # Generating sublayer because it isn't there
@@ -338,9 +456,15 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                                 st.rerun()
                     if st.session_state[f"sublayer_gen_button_for{current_layer_index}"] and sublayer_bool == False:
                         global_index = st.session_state["order"][idx]
-                        dict_of_sublayer = build_sub_layer(client, MODEL, system_message, st.session_state.prompt_for_sublayer, global_index)
+                        dict_of_sublayer = build_sub_layer(client, MODEL, system_message, st.session_state.prompt_for_sublayer, st.session_state["current_layer_index"], st.session_state["project_title"])
+                        st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
+                        list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
+                        df_data = pd.DataFrame(list_for_testing)
+                        df_data["outline_text"] = df_data["title"] + ": " + df_data["description"]
+                        st.session_state["df_data_complete"] = df_data.copy()
                         for outline_item in dict_of_sublayer["outline_items"]:
                             st.markdown(f"- {outline_item['title']}: {outline_item['description']}")
+                        st.rerun()
 
                     # SUBLAYER EXISTS
                     if sublayer_bool == True:
@@ -350,16 +474,14 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         for sub_idx, sub_row in sublayer_df.iterrows():
                             st.markdown(f"- {sub_row['title']}: {sub_row['description']}")
 
-                        with st.columns([10, 1])[1]:
+                        with st.columns([7, 1])[1]:
                             if f"zoom_in_button_for{current_layer_index}" not in st.session_state:
                                 st.session_state[f"zoom_in_button_for{current_layer_index}"] = False
                             if not st.session_state[f"zoom_in_button_for{current_layer_index}"]:
                                 go_to_level = st.button('Zoom in 🔍', key = f"zoom_in_button_for{current_layer_index}__")
                                 if go_to_level:
-                                    st.write(f'WILL SHIFT DOWN TO NEW LAYER: {str(st.session_state["current_layer_index"]) + "x"}')
                                     st.session_state["direction"] = "down"
                                     st.session_state["switch_action"] = True
-                                    st.write('Will also need to save the current layer + order to fields and feedback tables')
                                     st.rerun()
        
                 bottom_of_container = st.columns([4, 1, 4])

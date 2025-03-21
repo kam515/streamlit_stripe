@@ -76,13 +76,17 @@ def save_new_project(project_title, project_type, user_id):
 
 def save_layer(field_types, prompt_for_field, df_data, project_id, current_layer):
     # layer name
+    print('~~~~~~~~~~~~~~IN SAVE_LAYER FUNCTION~~~~~~~~~~~~~~')
     #TODO: add layer name to this function and save it as a field "like 1." so it would always be sorted first--even before 0
     for row_number, row in df_data.iterrows():  # Proper way to iterate over rows with index
         title = row['title']  # Access value by column name
         description = row['description']
         criteria_for_success = row['criteria_for_success']
         justification = row['justification']
-        layer_index = f"{current_layer}.{row_number}" 
+        # I want to chop everything off after the last period and the last period
+        # 1.0.2.4 --> 
+        layer_index = f"{current_layer}.{row_number}"
+        print('layer_index being saved to db: ', layer_index) 
         field_type = field_types[row_number-1] # getting correct index in field_types
         response = (
             Client.table("fields")
@@ -122,5 +126,4 @@ def get_list_of_field_records_from_dict(dict_):
     for record in list_filtered:
         record["field_datetime"] = record["field_datetime"].isoformat()
     list_filtered.sort(key=lambda x: (x["layer_index"]))
-    pprint.pprint(list_filtered)
     return list_filtered
