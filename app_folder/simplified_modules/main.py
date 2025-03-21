@@ -159,6 +159,8 @@ def check_for_sublayer(row, df_data_complete):
     print(f'df_indices_for_project: {df_indices_for_project}')
     if str(current_layer_idx) + ".0" in df_indices_for_project:
         sublayer_bool = True
+    if "added_row" in current_layer_idx:
+        sublayer_bool = False
     return sublayer_bool
 
 def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_index, project_title=st.session_state["project_title"]):
@@ -352,7 +354,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         else:
             next_layer_index = str(data_local.iloc[position]["layer_index"])
         # Overwrite layer_index for new row
-        computed_layer_index = prev_layer_index + next_layer_index
+        computed_layer_index = prev_layer_index + next_layer_index + "added_row"
         # Prepare new row with desired columns
         new_row = {
             "field_id": field_id,
@@ -368,8 +370,8 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
             "outline_text": outline_text
         }
         # Split data at position, then insert new row
-        before = data_local.iloc[:position]
-        after = data_local.iloc[position:]
+        before = data_local.iloc[:position+1]
+        after = data_local.iloc[position+1:]
         data_local = pd.concat([before, pd.DataFrame([new_row]), after]).reset_index(drop=True)
         # Update session state
         st.session_state["data"] = data_local
