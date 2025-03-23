@@ -29,7 +29,8 @@ def init_session_states():
         "prompt_for_sublayer": None,
         "direction": None,
         "switch_action": False,
-        "row_layer_index": None
+        "row_layer_index": None,
+        "edit_counter": 0
     }
     for k, v in defaults.items():
         if k not in st.session_state:
