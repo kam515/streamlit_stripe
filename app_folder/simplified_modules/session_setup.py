@@ -30,7 +30,8 @@ def init_session_states():
         "direction": None,
         "switch_action": False,
         "row_layer_index": None,
-        "edit_counter": 0
+        "edit_counter": 0,
+        "layer_period_count": 1
     }
     for k, v in defaults.items():
         if k not in st.session_state:

@@ -169,6 +169,7 @@ def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_
             (df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count + 1) &
             (df_data_complete["layer_index"].str.startswith(current_layer_index + "."))
         ]
+        layer_period_count = current_layer_period_count + 1
 
     else:
         # Remove the last ".x" from current_layer_index
@@ -190,8 +191,8 @@ def render_existing_layer(sesh_state_df_data_complete, direction, current_layer_
             (df_data_complete["layer_index"].str.count(r'\.') == current_layer_period_count - 1) &
             (df_data_complete["layer_index"].str.startswith(layer_previx_up + "."))
         ]
-
-    return new_layer_df, layer_name
+        layer_period_count = current_layer_period_count - 1
+    return new_layer_df, layer_name, layer_period_count
 
 
 if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_ID--BUILD THIS CASE (GRAB EVERYTHING FROM FIELDS THAT HAS A LAYER_INDEX STARTING WITH 1.) 
@@ -212,7 +213,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         print('Layer indices in df: ', st.session_state["df_data_complete"]['layer_index'].unique())
         direction = st.session_state["direction"]
         print('Direction: ', direction)
-        st.session_state["data"], st.session_state["layer_name"] = render_existing_layer(st.session_state["df_data_complete"], direction, row_layer_index)
+        st.session_state["data"], st.session_state["layer_name"], st.session_state['layer_period_count'] = render_existing_layer(st.session_state["df_data_complete"], direction, row_layer_index)
         st.session_state["order"] = list(range(len(st.session_state["data"])))
         st.session_state["current_layer_index"] = st.session_state["data"]["layer_index"]
         st.session_state["switch_action"] = False
@@ -252,7 +253,6 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         st.session_state["editing_row"] = None
         st.session_state["edit_counter"] += 1
         st.rerun()
-
 
     def add_row(position, field_id="", field_type="", prompt_for_field="", project_id="",
                 field_datetime="", layer_index="", title="", description="",
@@ -295,10 +295,6 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
         st.session_state["order"] = list(range(len(data_local)))
         st.rerun()
 
-
-
-
-
     ## RENDERING CURRENT LAYER ##
     # ========== Undo/Redo Buttons ==========
     top_row = st.columns([0.5, 0.5, 7, 2])
@@ -309,11 +305,43 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
 
     # *SAVE_STATE_TO_DB* Navigate to previous layer (if it exists--otherwise don't allow the button to be pressed and show a helper text)
     # WILL FIGURE OUT THE DISABLED THINGY SOON: st.button("<  Bigger Picture", disabled=True, key="dummy_button")
-    if st.button("<  Zoom Out"):
-        st.session_state["row_layer_index"] = st.session_state["current_layer_index"].iloc[0]
-        st.session_state["direction"] = "up"
-        st.session_state["switch_action"] = True
-        st.rerun()
+    second_row = st.columns([1, 10])
+    with second_row[0]:
+        try:
+            current_layer_period_count = st.session_state.current_layer_index.iloc[0].count(".")
+        except:
+            current_layer_period_count = st.session_state.current_layer_index.count(".")
+        if current_layer_period_count == 1:
+            st.button("<  Zoom Out", key='immobile', disabled=True)
+        else:
+            if st.button("<  Zoom Out", key='mobile'):
+                st.session_state["row_layer_index"] = st.session_state["current_layer_index"].iloc[0]
+                st.session_state["direction"] = "up"
+                st.session_state["switch_action"] = True
+                project_id = st.session_state["project_id"]
+                df_data = st.session_state["data"].reset_index(drop=True)
+                prompt_for_field = st.session_state["data"]["prompt_for_field"].iloc[0]
+                field_types = ['outline_item' for i in range(0, (df_data.shape[1])-1)]
+                save_layer(field_types, prompt_for_field, df_data, project_id, current_layer_period_count)
+                st.rerun()
+
+    with second_row[1]:
+        with st.popover('Full Outline View'):
+            #ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
+            st.session_state["project_dict"] = gather_project_dict(st.session_state["project_id"])
+            list_for_testing = get_list_of_field_records_from_dict(st.session_state["project_dict"])
+            df_data_updated = pd.DataFrame(list_for_testing)
+            copy_ordered_data = df_data_updated.copy()
+            copy_ordered_data["layer_number"] = copy_ordered_data["layer_index"].astype(str).apply(lambda x: x.count('.'))
+            for index, row in copy_ordered_data.iterrows():
+                heading_level = row["layer_number"]
+                spaces_num = heading_level - 1
+                st.markdown(
+                    f'<div style="font-size:14px; padding-left:{spaces_num * 20}px;">'
+                    f'<strong>{row["title"]}</strong>: {row["description"]}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
 
 
     layer_name = st.session_state["layer_name"]
@@ -321,7 +349,6 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
     st.write("---")
 
     ordered_data = st.session_state["data"].iloc[st.session_state["order"]].reset_index(drop=True)
-
 
     if ordered_data.empty:
         st.write("No items yet.")
@@ -358,7 +385,7 @@ if st.session_state["project_dict"] is not None: # OR WE CAME IN WITH A PROJECT_
                         delete_row(idx)
 
                 row_layer_index = row["layer_index"]
-                # *SAVE_STATE_TO_DB* Future sub-layer expansion
+                # SUBLAYER
                 with st.container(): # NEW
                     with st.columns([1, 7, 2])[1]:
                         sublayer_bool = check_for_sublayer(row, st.session_state["df_data_complete"])

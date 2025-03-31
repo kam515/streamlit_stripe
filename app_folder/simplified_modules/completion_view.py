@@ -23,7 +23,6 @@ sb_key = st.secrets["supabase_info"]["sb_key"]
 Client = create_client(sb_url, sb_key)
 
 # ========== Configurations ==========
-st.set_page_config(page_title="Thought Partner", layout="wide")
 API_KEY = st.secrets["openai_api_info"]["openai_key"]
 MODEL = "gpt-4o-2024-08-06"
 client = get_openai_client(api_key=API_KEY)
@@ -43,16 +42,28 @@ df["layer_number"] = df["layer_index"].astype(str).apply(lambda x: x.count('.'))
 
 st.write(df.sort_values(by="layer_index", ascending=True))
 
-cols_for_layers = st.columns([1, 1, 1, 1, 1])
+cols_for_layers = st.columns([1, 1, 1])
 
-for index, row in df.iterrows():
-    heading_level = row["layer_number"]
-    spaces_num = heading_level - 1
-    st.markdown('#'*heading_level + ' '+row["title"] + ": "+ row["description"])
+# with cols_for_layers[2]:
+#     for index, row in df.iterrows():
+#         heading_level = row["layer_number"]
+#         spaces_num = heading_level - 1
+#         st.markdown('#'*heading_level + ' '+row["title"] + ": "+ row["description"])
 
-    with cols_for_layers[0]:
-        with st.container(border=True):
-            st.markdown()
+
+def make_outline_style(df):
+    for index, row in df.iterrows():
+        heading_level = row["layer_number"]
+        spaces_num = heading_level - 1
+        st.markdown(
+            f'<div style="font-size:14px; padding-left:{spaces_num * 20}px;">'
+            f'<strong>{row["title"]}</strong>: {row["description"]}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+    # with cols_for_layers[0]:
+    #     with st.container(border=True):
+    #         st.markdown()
 
 
 # regenerate option
