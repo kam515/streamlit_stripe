@@ -75,7 +75,7 @@ def inject_css():
         unsafe_allow_html=True
     )
 
-def create_container_with_color(id_tag, color="#E4F2EC"):
+def create_container_with_color(id_tag, color="#9ee8c8"):
     """
     Build a placeholder container with a custom background color.
     """
