@@ -42,6 +42,35 @@ if not st.session_state["initiated_project"]:
         st.session_state.new_project = st.button('+ New Project')
     with col3: # existing
         user_projects = get_user_projects(user_id)
+        preexisting_projects = ["Achieve One Million Dollars",
+                "Testing Experiments",
+                "Affordable Valentine's Day Date Plan",
+                "Generating a Simple LLM Agent",
+                "Valentine's Day Date Planning",
+                "Biology Lesson for 9th Grade",
+                "Data Scientist Consultant Successful Workweek",
+                "Profitable SaaS App and Company Plan",
+                "Biology Lesson Development",
+                "Weekly Meal Plan Design",
+                "Earn an Extra $10 Per Month",
+                "Creating a Biology Lesson",
+                "Healthy Weekly Ritual",
+                "Create a Lesson Planning LLM Agent",
+                "Weekly Plan for Data Scientist Consultant",
+                "Generate Code for Simple LLM Agent",
+                "Great, Affordable Valentine's Date Plan",
+                "Great, Affordable Valentine's Day Date",
+                "Biology Lesson Plan",
+                "Affordable Valentine's Date Plan",
+                "Nashville Home Purchase for Strong ROI",
+                "9-Day MVP Launch Plan",
+                "Varied Weekly Meal Plan Design",
+                "Weekly Varied Meal Plan Design",
+                "9-Day App Completion Plan",
+                "Successful Workweek for Data Scientist Consultant",
+                "App Testing"
+            ]
+        user_projects = [item for item in user_projects if item not in preexisting_projects]
         st.session_state["existing_project_selected"] = st.selectbox(
             "Select an existing project:",
             user_projects,
